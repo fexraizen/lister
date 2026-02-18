@@ -1,3 +1,4 @@
+// Force update for Vercel build
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -97,8 +98,6 @@ export function ListingDetailPage() {
       setLoading(false);
     }
   };
-
-
 
   const getCategoryLabel = () => {
     if (!listing) return '';
