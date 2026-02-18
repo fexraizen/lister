@@ -155,7 +155,7 @@ export function AdminPage() {
           reporter:reporter_id (
             username
           ),
-          handler:handled_by (
+          handler:profiles!reports_handled_by_fkey (
             username,
             role
           )
@@ -163,7 +163,7 @@ export function AdminPage() {
         .order('created_at', { ascending: false });
 
       if (reportsError) throw reportsError;
-      setReports(reportsData as Report[]);
+      setReports(reportsData as unknown as Report[]);
 
       // Load activity logs
       const { data: logsData, error: logsError } = await supabase

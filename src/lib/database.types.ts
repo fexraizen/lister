@@ -229,6 +229,12 @@ export interface Database {
             columns: ["reporter_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_handled_by_fkey"
+            columns: ["handled_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           }
         ]
       }
