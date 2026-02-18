@@ -1,12 +1,10 @@
-// FINAL CLEANUP - NO HOOKS
-// Force update for Vercel build
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getShopById, type Shop } from '../../lib/shops';
 import { supabase } from '../../lib/supabase';
 import { ContactModal } from './ContactModal';
-import { Edit, Trash2, MessageCircle, Gauge, MapPin, Store as StoreIcon, User as UserIcon, Eye, Zap } from 'lucide-react';
+import { Edit, Trash2, MessageCircle, Zap } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Listing = Database['public']['Tables']['listings']['Row'] & {

@@ -30,14 +30,14 @@ export function HomePage() {
     const fetchSettings = async () => {
       try {
         const { data, error } = await supabase
-          .from('site_settings')
+          .from('site_settings' as any)
           .select('key, value');
 
         if (error) throw error;
 
         if (data && data.length > 0) {
           const settingsObj: any = {};
-          data.forEach((item) => {
+          (data as any[]).forEach((item: any) => {
             settingsObj[item.key] = item.value;
           });
           setSettings({

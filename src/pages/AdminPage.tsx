@@ -196,12 +196,12 @@ export function AdminPage() {
 
       // Load site settings
       const { data: settingsData, error: settingsError } = await supabase
-        .from('site_settings')
+        .from('site_settings' as any)
         .select('key, value');
 
       if (!settingsError && settingsData) {
         const settingsObj: any = {};
-        settingsData.forEach((item) => {
+        (settingsData as any[]).forEach((item: any) => {
           settingsObj[item.key] = item.value;
         });
         setSiteSettings({
@@ -233,7 +233,7 @@ export function AdminPage() {
       ];
 
       for (const update of updates) {
-        const { error } = await supabase.rpc('update_site_setting', {
+        const { error } = await supabase.rpc('update_site_setting' as any, {
           p_key: update.key,
           p_value: JSON.stringify(update.value),
           p_admin_id: user.id

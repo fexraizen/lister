@@ -1,33 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNotification } from '../../contexts/NotificationContext';
-import { LogOut, User, Plus, DollarSign, Home, Package, Shield, Menu, X, Store, Coins } from 'lucide-react';
+import { LogOut, User, Plus, DollarSign, Home, Package, Shield, Menu, X, Store } from 'lucide-react';
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 
 export function Navbar() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { showToast } = useNotification();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loadingBalance, setLoadingBalance] = useState(false);
-
-  const handleAddTestBalance = async () => {
-    if (!user) return;
-
-    setLoadingBalance(true);
-    try {
-      const { error } = await supabase.rpc('add_test_balance', { p_user_id: user.id });
-      if (error) throw error;
-      
-      showToast('💰 Test bakiyesi eklendi! (+$50,000)', 'success');
-      window.location.reload(); // Refresh to update balance
-    } catch (err: any) {
-      showToast(err.message || 'Bakiye eklenemedi', 'error');
-    } finally {
-      setLoadingBalance(false);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();

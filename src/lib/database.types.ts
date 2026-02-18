@@ -71,6 +71,7 @@ export interface Database {
           mileage: number | null
           speed: number | null
           view_count: number
+          is_boosted: boolean
           boosted_until: string | null
           created_at: string
           updated_at: string
@@ -88,6 +89,7 @@ export interface Database {
           mileage?: number | null
           speed?: number | null
           view_count?: number
+          is_boosted?: boolean
           boosted_until?: string | null
           created_at?: string
           updated_at?: string
@@ -105,6 +107,7 @@ export interface Database {
           mileage?: number | null
           speed?: number | null
           view_count?: number
+          is_boosted?: boolean
           boosted_until?: string | null
           created_at?: string
           updated_at?: string
@@ -321,6 +324,34 @@ export interface Database {
           }
         ]
       }
+      site_settings: {
+        Row: {
+          key: string
+          value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          key: string
+          value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          key?: string
+          value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -385,6 +416,14 @@ export interface Database {
           p_admin_id: string
         }
         Returns: Json
+      }
+      update_site_setting: {
+        Args: {
+          p_key: string
+          p_value: string
+          p_admin_id: string
+        }
+        Returns: void
       }
     }
     Enums: {
