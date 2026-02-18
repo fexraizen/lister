@@ -11,7 +11,7 @@ type Category = 'vehicle' | 'real_estate' | 'item' | 'service';
 
 export function ListingEditPage() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useNotification();
   const [loading, setLoading] = useState(true);
@@ -85,7 +85,14 @@ export function ListingEditPage() {
         hasShopPermission = role !== null;
       }
 
-      if (!isOwner && !hasShopPermission) {
+      // Check if user is admin/moderator
+      const isAdminOrModerator = profile?.role === 'admin' || 
+                                 profile?.role === 'super_admin' || 
+                                 profile?.role === 'moderator';
+
+      const canManage = isOwner || hasShopPermission || isAdminOrModerator;
+
+      if (!canManage) {
         showToast('Bu ilanı düzenleme yetkiniz yok', 'error');
         navigate('/');
         return;

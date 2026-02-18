@@ -183,6 +183,55 @@ export interface Database {
           }
         ]
       }
+      reports: {
+        Row: {
+          id: string
+          listing_id: string
+          reporter_id: string
+          reason: string
+          status: 'pending' | 'reviewed' | 'resolved'
+          admin_notes: string | null
+          handled_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          reporter_id: string
+          reason: string
+          status?: 'pending' | 'reviewed' | 'resolved'
+          admin_notes?: string | null
+          handled_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          reporter_id?: string
+          reason?: string
+          status?: 'pending' | 'reviewed' | 'resolved'
+          admin_notes?: string | null
+          handled_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_listing_id_fkey"
+            columns: ["listing_id"]
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       shops: {
         Row: {
           id: string

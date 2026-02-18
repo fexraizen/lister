@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
 import { getShopById, type Shop } from '../lib/shops';
-import { ArrowLeft, MapPin, Gauge, MessageCircle, Calendar, Store, Phone, User as UserIcon, Rocket, Zap, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Gauge, MessageCircle, Calendar, Store, Phone, User as UserIcon, Rocket, Zap, Clock, Edit, Trash2, AlertTriangle, X } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { BoostModal } from '../components/listings/BoostModal';
@@ -24,7 +24,7 @@ type Listing = Database['public']['Tables']['listings']['Row'] & {
 export function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useNotification();
   const [listing, setListing] = useState<Listing | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
@@ -32,6 +32,8 @@ export function ListingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -113,6 +115,57 @@ export function ListingDetailPage() {
     }
   };
 
+  const handleDeleteListing = async () => {
+    if (!id || !listing) return;
+    
+    if (!window.confirm('Bu ilanı silmek istediğinizden emin misiniz?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      showToast('İlan başarıyla silindi', 'success');
+      navigate('/');
+    } catch (err: any) {
+      showToast(err.message || 'İlan silinemedi', 'error');
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    if (!user || !id) {
+      showToast('Şikayet göndermek için giriş yapmalısınız', 'error');
+      return;
+    }
+
+    if (!reportReason.trim()) {
+      showToast('Lütfen bir şikayet nedeni girin', 'error');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('reports')
+        .insert([{
+          listing_id: id,
+          reporter_id: user.id,
+          reason: reportReason,
+          status: 'pending'
+        }]);
+
+      if (error) throw error;
+      showToast('Şikayetiniz başarıyla gönderildi', 'success');
+      setShowReportModal(false);
+      setReportReason('');
+    } catch (err: any) {
+      showToast(err.message || 'Şikayet gönderilemedi', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -132,6 +185,15 @@ export function ListingDetailPage() {
   }
 
   const isOwner = user?.id === listing.user_id;
+  
+  // Check if user is admin/moderator
+  const isAdminOrModerator = profile?.role === 'admin' || 
+                             profile?.role === 'super_admin' || 
+                             profile?.role === 'moderator';
+  
+  // Can edit/delete if owner OR admin/moderator
+  const canManage = isOwner || isAdminOrModerator;
+  
   const isActive = listing.status === 'active';
   const isOutOfStock = listing.status === 'out_of_stock';
   const isBoosted = listing.boosted_until && new Date(listing.boosted_until) > new Date();
@@ -289,19 +351,47 @@ export function ListingDetailPage() {
                   </button>
                 )}
 
+                {canManage && (
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => navigate(`/listing/${listing.id}/edit`)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-semibold"
+                    >
+                      <Edit className="w-5 h-5" />
+                      <span>Düzenle</span>
+                    </button>
+                    <button
+                      onClick={handleDeleteListing}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-semibold"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                      <span>Sil</span>
+                    </button>
+                  </div>
+                )}
+
                 {!isOwner && (isActive || isOutOfStock) && (
-                  <button
-                    onClick={() => setShowContactModal(true)}
-                    disabled={isOutOfStock}
-                    className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl transition-all font-semibold text-lg ${
-                      isOutOfStock
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg'
-                    }`}
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span>{isOutOfStock ? 'Stokta Yok' : 'İletişime Geç'}</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setShowContactModal(true)}
+                      disabled={isOutOfStock}
+                      className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl transition-all font-semibold text-lg mb-3 ${
+                        isOutOfStock
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg'
+                      }`}
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      <span>{isOutOfStock ? 'Stokta Yok' : 'İletişime Geç'}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowReportModal(true)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-50 text-orange-600 rounded-xl hover:bg-orange-100 transition-colors font-semibold"
+                    >
+                      <AlertTriangle className="w-5 h-5" />
+                      <span>İlanı Şikayet Et</span>
+                    </button>
+                  </>
                 )}
 
                 {!isOwner && !isActive && !isOutOfStock && (
@@ -448,6 +538,65 @@ export function ListingDetailPage() {
         shopName={shop?.name}
         isShop={!!shop}
       />
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <AlertTriangle className="w-6 h-6 text-orange-600" />
+                <span>İlanı Şikayet Et</span>
+              </h3>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              Bu ilanla ilgili bir sorun mu var? Lütfen şikayet nedeninizi belirtin.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Şikayet Nedeni
+              </label>
+              <select
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">Bir neden seçin...</option>
+                <option value="Sahte İlan">Sahte İlan</option>
+                <option value="Yanıltıcı Fiyat">Yanıltıcı Fiyat</option>
+                <option value="Uygunsuz İçerik">Uygunsuz İçerik</option>
+                <option value="Dolandırıcılık">Dolandırıcılık</option>
+                <option value="Yanlış Kategori">Yanlış Kategori</option>
+                <option value="Diğer">Diğer</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleSubmitReport}
+                disabled={!reportReason}
+                className="flex-1 bg-orange-600 text-white px-4 py-3 rounded-xl hover:bg-orange-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Şikayeti Gönder
+              </button>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

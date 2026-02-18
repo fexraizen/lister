@@ -3,15 +3,32 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
-import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign } from 'lucide-react';
+import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign, Package, AlertTriangle } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Shop = Database['public']['Tables']['shops']['Row'];
 type ActivityLog = Database['public']['Tables']['activity_logs']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Row'];
+type Listing = Database['public']['Tables']['listings']['Row'] & {
+  profiles?: {
+    username: string;
+  };
+};
+type Report = Database['public']['Tables']['reports']['Row'] & {
+  listing?: {
+    title: string;
+  };
+  reporter?: {
+    username: string;
+  };
+  handler?: {
+    username: string;
+    role: string;
+  };
+};
 
-type TabType = 'users' | 'shops' | 'activity' | 'financial';
+type TabType = 'users' | 'shops' | 'listings' | 'reports' | 'activity' | 'financial';
 
 type Toast = {
   id: string;
@@ -20,10 +37,12 @@ type Toast = {
 };
 
 export function AdminPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,13 +76,39 @@ export function AdminPage() {
       return;
     }
 
-    if (!profile?.is_admin && profile?.role !== 'admin' && profile?.role !== 'super_admin') {
-      navigate('/');
-      return;
-    }
+    // Fetch fresh profile from database to check admin status
+    checkAdminAccess();
+  }, [user, navigate]);
 
-    loadData();
-  }, [user, profile, navigate]);
+  const checkAdminAccess = async () => {
+    if (!user) return;
+
+    try {
+      // Fetch fresh profile data from database
+      const { data: freshProfile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      // Check if user has admin access
+      if (!freshProfile?.is_admin && 
+          freshProfile?.role !== 'admin' && 
+          freshProfile?.role !== 'super_admin' &&
+          freshProfile?.role !== 'moderator') {
+        navigate('/');
+        return;
+      }
+
+      // User has access, load data
+      loadData();
+    } catch (err) {
+      console.error('Failed to check admin access:', err);
+      navigate('/');
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -84,6 +129,41 @@ export function AdminPage() {
 
       if (shopsError) throw shopsError;
       setShops(shopsData);
+
+      // Load listings with seller info
+      const { data: listingsData, error: listingsError } = await supabase
+        .from('listings')
+        .select(`
+          *,
+          profiles:user_id (
+            username
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (listingsError) throw listingsError;
+      setListings(listingsData as Listing[]);
+
+      // Load reports with listing and reporter info
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('reports')
+        .select(`
+          *,
+          listing:listing_id (
+            title
+          ),
+          reporter:reporter_id (
+            username
+          ),
+          handler:handled_by (
+            username,
+            role
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (reportsError) throw reportsError;
+      setReports(reportsData as Report[]);
 
       // Load activity logs
       const { data: logsData, error: logsError } = await supabase
@@ -177,6 +257,12 @@ export function AdminPage() {
       // No error means success!
       showToast('Rol başarıyla güncellendi!', 'success');
       setEditingRole(null);
+      
+      // Refresh profile if we updated our own role
+      if (editingRole.userId === user.id) {
+        await refreshProfile();
+      }
+      
       loadData(); // Refresh user list
     } catch (err: any) {
       console.error('Role update error:', err);
@@ -348,6 +434,260 @@ export function AdminPage() {
       banned: { text: 'Kapalı', color: 'bg-red-100 text-red-700' }
     };
     return badges[status as keyof typeof badges] || badges.active;
+  };
+
+  const getListingStatusBadge = (status: string) => {
+    const badges = {
+      active: { text: 'Aktif', color: 'bg-green-100 text-green-700' },
+      passive: { text: 'Pasif', color: 'bg-gray-100 text-gray-700' },
+      out_of_stock: { text: 'Tükendi', color: 'bg-orange-100 text-orange-700' }
+    };
+    return badges[status as keyof typeof badges] || badges.active;
+  };
+
+  const getActivityIcon = (action: string) => {
+    if (action.includes('Mağaza') || action.includes('Shop')) return '🏪';
+    if (action.includes('İlan') || action.includes('Listing')) return '🏷️';
+    if (action.includes('Şikayet') || action.includes('Report')) return '⚠️';
+    if (action.includes('Boost')) return '🚀';
+    if (action.includes('Bakiye') || action.includes('Balance')) return '💰';
+    if (action.includes('Rol') || action.includes('Role')) return '👤';
+    return '📝';
+  };
+
+  const getActivityBadgeColor = (action: string) => {
+    if (action.includes('Mağaza') || action.includes('Shop')) return 'bg-purple-100 text-purple-700';
+    if (action.includes('İlan') || action.includes('Listing')) return 'bg-blue-100 text-blue-700';
+    if (action.includes('Şikayet') || action.includes('Report')) return 'bg-orange-100 text-orange-700';
+    if (action.includes('Boost')) return 'bg-green-100 text-green-700';
+    if (action.includes('Bakiye') || action.includes('Balance')) return 'bg-emerald-100 text-emerald-700';
+    if (action.includes('Rol') || action.includes('Role')) return 'bg-indigo-100 text-indigo-700';
+    if (action.includes('Admin')) return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const formatLogMessage = (log: ActivityLog, username: string) => {
+    const details = log.details as any;
+    
+    switch (log.action) {
+      case 'Admin Şikayet Güncelledi':
+        if (details?.listing_title && details?.old_status && details?.new_status) {
+          const statusLabels: Record<string, string> = {
+            pending: 'Beklemede',
+            reviewed: 'İncelendi',
+            resolved: 'Çözüldü'
+          };
+          return `${username}, '${details.listing_title}' ilanı hakkındaki şikayeti '${statusLabels[details.old_status] || details.old_status}' durumundan '${statusLabels[details.new_status] || details.new_status}' durumuna getirdi.`;
+        }
+        if (details?.old_status && details?.new_status) {
+          const statusLabels: Record<string, string> = {
+            pending: 'Beklemede',
+            reviewed: 'İncelendi',
+            resolved: 'Çözüldü'
+          };
+          return `${username}, bir şikayeti '${statusLabels[details.old_status] || details.old_status}' durumundan '${statusLabels[details.new_status] || details.new_status}' durumuna getirdi.`;
+        }
+        return `${username}, bir şikayeti güncelledi.`;
+      
+      case 'Yeni İlan':
+      case 'İlan Oluşturuldu':
+        if (details?.listing_title && details?.price) {
+          return `${username}, '${details.listing_title}' başlıklı ilanı ${details.price} TL fiyatıyla yayına aldı.`;
+        }
+        if (details?.title && details?.price) {
+          return `${username}, '${details.title}' başlıklı ilanı ${details.price} TL fiyatıyla yayına aldı.`;
+        }
+        return `${username}, yeni bir ilan oluşturdu.`;
+      
+      case 'Mağaza Oluşturuldu':
+        if (details?.shop_name) {
+          return `${username}, '${details.shop_name}' isimli mağazasını sektöre kazandırdı.`;
+        }
+        return `${username}, yeni bir mağaza açtı.`;
+      
+      case 'İlan Boost Edildi':
+        if (details?.listing_title && details?.duration_hours) {
+          return `${username}, '${details.listing_title}' ilanını ${details.duration_hours} saat boyunca boost etti.`;
+        }
+        if (details?.listing_title && details?.cost) {
+          return `${username}, '${details.listing_title}' ilanını ${details.cost} TL karşılığında boost etti.`;
+        }
+        return `${username}, bir ilanı boost etti.`;
+      
+      case 'İlan Şikayet Edildi':
+        if (details?.listing_title && details?.reason) {
+          return `${username}, '${details.listing_title}' ilanını '${details.reason}' nedeniyle şikayet etti.`;
+        }
+        if (details?.reason) {
+          return `${username}, bir ilanı '${details.reason}' nedeniyle şikayet etti.`;
+        }
+        return `${username}, bir ilanı şikayet etti.`;
+      
+      case 'Bakiye Yüklendi':
+      case 'Test Bakiyesi Eklendi':
+        if (details?.amount) {
+          return `${username}, hesabına ${details.amount} TL tutarında bakiye yükledi.`;
+        }
+        return `${username}, bakiye yükledi.`;
+      
+      case 'Boost Harcaması':
+        if (details?.amount && details?.listing_title) {
+          return `${username}, '${details.listing_title}' ilanı için ${Math.abs(details.amount)} TL boost harcaması yaptı.`;
+        }
+        if (details?.amount) {
+          return `${username}, ${Math.abs(details.amount)} TL boost harcaması yaptı.`;
+        }
+        return `${username}, boost harcaması yaptı.`;
+      
+      case 'İlan Ücreti':
+        if (details?.amount && details?.listing_title) {
+          return `${username}, '${details.listing_title}' ilanı için ${Math.abs(details.amount)} TL ilan ücreti ödedi.`;
+        }
+        if (details?.amount) {
+          return `${username}, ${Math.abs(details.amount)} TL ilan ücreti ödedi.`;
+        }
+        return `${username}, ilan ücreti ödedi.`;
+      
+      case 'Finansal İşlem':
+        if (details?.amount && details?.type) {
+          const typeLabels: Record<string, string> = {
+            deposit: 'bakiye yükleme',
+            withdrawal: 'para çekme',
+            purchase: 'satın alma',
+            boost: 'boost',
+            listing_fee: 'ilan ücreti'
+          };
+          return `${username}, hesabına ${Math.abs(details.amount)} TL tutarında ${typeLabels[details.type] || details.type} işlemi gerçekleştirdi.`;
+        }
+        return `${username}, finansal işlem gerçekleştirdi.`;
+      
+      case 'Admin İlan Sildi':
+        if (details?.listing_title) {
+          return `${username}, '${details.listing_title}' ilanını sildi.`;
+        }
+        return `${username}, bir ilanı sildi.`;
+      
+      case 'Admin İlan Güncelledi':
+        if (details?.listing_title) {
+          return `${username}, '${details.listing_title}' ilanını güncelledi.`;
+        }
+        return `${username}, bir ilanı güncelledi.`;
+      
+      default:
+        // Fallback: Try to extract common fields
+        if (details?.listing_title) {
+          return `${username}, '${details.listing_title}' ile ilgili ${log.action} işlemi gerçekleştirdi.`;
+        }
+        if (details?.shop_name) {
+          return `${username}, '${details.shop_name}' mağazası ile ilgili ${log.action} işlemi gerçekleştirdi.`;
+        }
+        return `${username}, ${log.action}`;
+    }
+  };
+
+  const handleDeleteListing = async (listingId: string, listingTitle: string) => {
+    if (!window.confirm(`"${listingTitle}" ilanını silmek istediğinizden emin misiniz?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', listingId);
+
+      if (error) throw error;
+      showToast('İlan başarıyla silindi', 'success');
+      loadData();
+    } catch (err: any) {
+      showToast(err.message || 'İlan silinemedi', 'error');
+    }
+  };
+
+  const handleToggleListingStatus = async (listingId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'passive' : 'active';
+    
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .update({ status: newStatus })
+        .eq('id', listingId)
+        .select();
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Güncelleme başarısız oldu');
+      }
+
+      showToast(`İlan durumu ${newStatus === 'active' ? 'aktif' : 'pasif'} olarak güncellendi`, 'success');
+      loadData();
+    } catch (err: any) {
+      showToast(err.message || 'Durum güncellenemedi', 'error');
+    }
+  };
+
+  const handleMarkReportReviewed = async (reportId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .update({ 
+          status: 'reviewed',
+          handled_by: user.id
+        })
+        .eq('id', reportId)
+        .select();
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Güncelleme başarısız oldu');
+      }
+
+      showToast('Şikayet incelendi olarak işaretlendi', 'success');
+      loadData();
+    } catch (err: any) {
+      showToast(err.message || 'Durum güncellenemedi', 'error');
+    }
+  };
+
+  const handleDeleteListingFromReport = async (listingId: string, reportId: string) => {
+    if (!user) return;
+    
+    if (!window.confirm('Bu ilanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+      return;
+    }
+
+    try {
+      // Delete the listing
+      const { error: listingError } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', listingId);
+
+      if (listingError) throw listingError;
+
+      // Mark report as resolved
+      const { data, error: reportError } = await supabase
+        .from('reports')
+        .update({ 
+          status: 'resolved', 
+          admin_notes: 'İlan silindi',
+          handled_by: user.id
+        })
+        .eq('id', reportId)
+        .select();
+
+      if (reportError) throw reportError;
+      if (!data || data.length === 0) {
+        throw new Error('Şikayet güncelleme başarısız oldu');
+      }
+
+      showToast('İlan silindi ve şikayet çözüldü olarak işaretlendi', 'success');
+      loadData();
+    } catch (err: any) {
+      showToast(err.message || 'İşlem başarısız', 'error');
+    }
   };
 
   if (!profile?.is_admin && profile?.role !== 'admin' && profile?.role !== 'super_admin') {
@@ -577,6 +917,28 @@ export function AdminPage() {
               <span>Mağazalar</span>
             </button>
             <button
+              onClick={() => setActiveTab('listings')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+                activeTab === 'listings'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Package className="w-5 h-5" />
+              <span>İlanlar</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+                activeTab === 'reports'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5" />
+              <span>Şikayetler</span>
+            </button>
+            <button
               onClick={() => setActiveTab('activity')}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
                 activeTab === 'activity'
@@ -798,6 +1160,212 @@ export function AdminPage() {
                   </table>
                 </div>
               </div>
+            ) : activeTab === 'listings' ? (
+              <div>
+                <h2 className="text-xl font-bold mb-4">İlan Yönetimi</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4">İlan Adı</th>
+                        <th className="text-left py-3 px-4">Satıcı</th>
+                        <th className="text-left py-3 px-4">Fiyat</th>
+                        <th className="text-left py-3 px-4">Durum</th>
+                        <th className="text-left py-3 px-4">Oluşturulma</th>
+                        <th className="text-left py-3 px-4">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {listings.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-gray-500">
+                            Henüz ilan bulunmuyor
+                          </td>
+                        </tr>
+                      ) : (
+                        listings.map((listing) => {
+                          const statusBadge = getListingStatusBadge(listing.status);
+                          return (
+                            <tr 
+                              key={listing.id} 
+                              className="border-b border-gray-100 hover:bg-gray-50"
+                            >
+                              <td className="py-3 px-4 font-medium max-w-xs truncate">
+                                {listing.title}
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {listing.profiles?.username || 'Bilinmeyen'}
+                              </td>
+                              <td className="py-3 px-4 font-semibold text-gray-900">
+                                ${listing.price.toFixed(2)}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
+                                  {statusBadge.text}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {new Date(listing.created_at).toLocaleDateString('tr-TR')}
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleToggleListingStatus(listing.id, listing.status)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                                      listing.status === 'active'
+                                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    }`}
+                                    title={listing.status === 'active' ? 'Pasife Al' : 'Aktife Al'}
+                                  >
+                                    {listing.status === 'active' ? '⏸ Pasif Yap' : '▶ Aktif Yap'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteListing(listing.id, listing.title)}
+                                    className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                    title="Sil"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : activeTab === 'reports' ? (
+              <div>
+                <h2 className="text-xl font-bold mb-4">Şikayet Yönetimi</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4">Şikayet Edilen İlan</th>
+                        <th className="text-left py-3 px-4">Şikayet Eden</th>
+                        <th className="text-left py-3 px-4">Neden</th>
+                        <th className="text-left py-3 px-4">Durum</th>
+                        <th className="text-left py-3 px-4">İlgilenen</th>
+                        <th className="text-left py-3 px-4">Tarih</th>
+                        <th className="text-left py-3 px-4">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reports.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-gray-500">
+                            Henüz şikayet bulunmuyor
+                          </td>
+                        </tr>
+                      ) : (
+                        reports.map((report) => {
+                          const statusColors = {
+                            pending: 'bg-yellow-100 text-yellow-700',
+                            reviewed: 'bg-blue-100 text-blue-700',
+                            resolved: 'bg-green-100 text-green-700'
+                          };
+                          const statusLabels = {
+                            pending: 'Beklemede',
+                            reviewed: 'İncelendi',
+                            resolved: 'Çözüldü'
+                          };
+                          
+                          // Get role badge for handler
+                          const handlerRoleBadge = report.handler?.role ? getRoleBadge(report.handler.role) : null;
+                          
+                          return (
+                            <tr 
+                              key={report.id} 
+                              className={`border-b border-gray-100 hover:bg-gray-50 ${
+                                report.status === 'pending' ? 'bg-yellow-50/30' : ''
+                              }`}
+                            >
+                              <td className="py-3 px-4 font-medium max-w-xs">
+                                {report.listing?.title ? (
+                                  <a
+                                    href={`/listing/${report.listing_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 hover:underline truncate block"
+                                    title={report.listing.title}
+                                  >
+                                    {report.listing.title}
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400">İlan Silinmiş</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {report.reporter?.username || 'Bilinmeyen'}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
+                                  {report.reason}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColors[report.status]}`}>
+                                  {statusLabels[report.status]}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {report.handler?.username ? (
+                                  <div className="flex flex-col gap-1">
+                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold inline-flex items-center gap-1 w-fit">
+                                      👤 {report.handler.username}
+                                    </span>
+                                    {handlerRoleBadge && (
+                                      <span className={`px-2 py-1 rounded-full text-xs font-semibold w-fit ${handlerRoleBadge.color}`}>
+                                        {handlerRoleBadge.text}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {new Date(report.created_at).toLocaleDateString('tr-TR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex gap-2">
+                                  {report.status === 'pending' && (
+                                    <button
+                                      onClick={() => handleMarkReportReviewed(report.id)}
+                                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-xs font-semibold"
+                                      title="İncelendi Olarak İşaretle"
+                                    >
+                                      ✓ İncelendi
+                                    </button>
+                                  )}
+                                  {report.listing && report.status !== 'resolved' && (
+                                    <button
+                                      onClick={() => handleDeleteListingFromReport(report.listing_id, report.id)}
+                                      className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                      title="İlanı Sil"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             ) : activeTab === 'activity' ? (
               <div>
                 <h2 className="text-xl font-bold mb-4">📜 Aktivite Logları</h2>
@@ -808,42 +1376,38 @@ export function AdminPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4">Kullanıcı</th>
-                        <th className="text-left py-3 px-4">İşlem</th>
-                        <th className="text-left py-3 px-4">Detay</th>
+                        <th className="text-left py-3 px-4">İşlem Tipi</th>
+                        <th className="text-left py-3 px-4">Açıklama</th>
                         <th className="text-left py-3 px-4">Tarih</th>
                       </tr>
                     </thead>
                     <tbody>
                       {activityLogs.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="py-8 text-center text-gray-500">
+                          <td colSpan={3} className="py-8 text-center text-gray-500">
                             Henüz aktivite kaydı bulunmuyor
                           </td>
                         </tr>
                       ) : (
                         activityLogs.map((log) => {
                           const user = users.find(u => u.id === log.user_id);
+                          const username = user?.username || 'Bilinmeyen Kullanıcı';
+                          const icon = getActivityIcon(log.action);
+                          const badgeColor = getActivityBadgeColor(log.action);
+                          const message = formatLogMessage(log, username);
+                          
                           return (
                             <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
-                              <td className="py-3 px-4 font-medium">
-                                {user?.username || 'Bilinmeyen Kullanıcı'}
-                              </td>
                               <td className="py-3 px-4">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                                  {log.action}
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 ${badgeColor}`}>
+                                  <span>{icon}</span>
+                                  <span>{log.action}</span>
                                 </span>
                               </td>
-                              <td className="py-3 px-4 text-sm text-gray-600">
-                                {log.details ? (
-                                  <pre className="text-xs bg-gray-50 p-2 rounded max-w-md overflow-x-auto">
-                                    {JSON.stringify(log.details, null, 2)}
-                                  </pre>
-                                ) : (
-                                  '-'
-                                )}
+                              <td className="py-3 px-4 text-sm text-gray-700">
+                                {message}
                               </td>
-                              <td className="py-3 px-4 text-sm text-gray-600">
+                              <td className="py-3 px-4 text-sm text-gray-600 whitespace-nowrap">
                                 {new Date(log.created_at).toLocaleString('tr-TR', {
                                   year: 'numeric',
                                   month: '2-digit',

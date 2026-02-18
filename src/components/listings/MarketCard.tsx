@@ -23,12 +23,21 @@ interface MarketCardProps {
 }
 
 export function MarketCard({ listing, onDelete }: MarketCardProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [shop, setShop] = useState<Shop | null>(null);
   const [sellerProfile, setSellerProfile] = useState<any>(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const isOwner = user?.id === listing.user_id;
+  
+  // Check if user is admin/moderator
+  const isAdminOrModerator = profile?.role === 'admin' || 
+                             profile?.role === 'super_admin' || 
+                             profile?.role === 'moderator';
+  
+  // Can edit/delete if owner OR admin/moderator
+  const canManage = isOwner || isAdminOrModerator;
+  
   const isActive = listing.status === 'active';
   const isOutOfStock = listing.status === 'out_of_stock';
   const isBoosted = listing.boosted_until && new Date(listing.boosted_until) > new Date();
@@ -209,7 +218,7 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
           </div>
 
           {/* Actions */}
-          {isOwner ? (
+          {canManage ? (
             <div className="flex gap-2">
               <button
                 onClick={(e) => {
