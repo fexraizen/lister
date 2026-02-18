@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Navbar } from '../components/layout/Navbar';
-import { ListingCard } from '../components/listings/ListingCard';
+import { MarketCard } from '../components/listings/MarketCard';
 import { fetchListings, deleteListing } from '../lib/listings';
 import { Plus } from 'lucide-react';
 import type { Database } from '../lib/database.types';
@@ -93,7 +93,7 @@ export function MyListingsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => (
-              <ListingCard
+              <MarketCard
                 key={listing.id}
                 listing={listing}
                 onDelete={handleDelete}

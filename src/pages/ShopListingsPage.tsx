@@ -5,7 +5,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
 import { getShopById, getUserRoleInShop, type Shop } from '../lib/shops';
-import { ListingCard } from '../components/listings/ListingCard';
+import { MarketCard } from '../components/listings/MarketCard';
 import { ArrowLeft, Store, Package } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 
@@ -169,7 +169,7 @@ export function ShopListingsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => (
-              <ListingCard
+              <MarketCard
                 key={listing.id}
                 listing={listing}
                 onDelete={handleDeleteListing}

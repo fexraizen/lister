@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ListingCard } from '../listings/ListingCard';
+import { MarketCard } from '../listings/MarketCard';
 import { fetchListings, deleteListing, sortListings } from '../../lib/listings';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -172,7 +172,7 @@ export function MarketplaceFeed({ category }: MarketplaceFeedProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {listings.map((listing) => (
-            <ListingCard
+            <MarketCard
               key={listing.id}
               listing={listing}
               onDelete={handleDelete}

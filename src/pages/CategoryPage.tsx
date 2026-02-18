@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
-import { ListingCard } from '../components/listings/ListingCard';
+import { MarketCard } from '../components/listings/MarketCard';
 import { fetchListings, deleteListing } from '../lib/listings';
 import { useNotification } from '../contexts/NotificationContext';
 import { Filter, SlidersHorizontal, X } from 'lucide-react';
@@ -269,7 +269,7 @@ export function CategoryPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredListings.map((listing) => (
-                  <ListingCard
+                  <MarketCard
                     key={listing.id}
                     listing={listing}
                     onDelete={handleDelete}
