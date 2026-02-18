@@ -57,7 +57,7 @@ export function Navbar() {
                   <Store className="w-4 h-4" />
                   <span>Mağazalarım</span>
                 </Link>
-                {(profile?.is_admin || profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'moderator') && (
+                {(profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'moderator') && (
                   <Link
                     to="/admin"
                     className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-all duration-300 font-normal"
@@ -192,7 +192,7 @@ export function Navbar() {
                 <span>Mağazalarım</span>
               </Link>
 
-              {(profile?.is_admin || profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'moderator') && (
+              {(profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'moderator') && (
                 <Link
                   to="/admin"
                   onClick={() => setMobileMenuOpen(false)}

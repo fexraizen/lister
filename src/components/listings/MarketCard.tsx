@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getShopById, type Shop } from '../../lib/shops';
 import { supabase } from '../../lib/supabase';
 import { ContactModal } from './ContactModal';
-import { Edit, Trash2, MessageCircle, Zap } from 'lucide-react';
+import { Edit, Trash2, MessageCircle, Sparkles } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Listing = Database['public']['Tables']['listings']['Row'] & {
@@ -38,7 +38,9 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
   
   const isActive = listing.status === 'active';
   const isOutOfStock = listing.status === 'out_of_stock';
-  const isBoosted = listing.boosted_until && new Date(listing.boosted_until) > new Date();
+  
+  // Use is_boosted directly from database (true/false)
+  const isBoosted = listing.is_boosted === true;
 
   useEffect(() => {
     if (listing.shop_id) {
@@ -149,8 +151,8 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
           </div>
 
           {isBoosted && (
-            <div className="absolute top-4 right-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-md">
-              <Zap className="w-3 h-3" />
+            <div className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-md">
+              <Sparkles className="w-3 h-3" />
               <span>Öne Çıkan</span>
             </div>
           )}

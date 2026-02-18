@@ -89,7 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.user.id,
           username,
           balance: 0,
-          is_admin: false,
           is_seller: false,
         }]);
 

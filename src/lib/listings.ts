@@ -55,6 +55,14 @@ export async function fetchListings(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
+  
+  // Debug log: Check first listing from DB
+  if (data && data.length > 0) {
+    console.log("DB'den Gelen İlk İlan:", data[0]);
+    console.log("is_boosted değeri:", data[0].is_boosted);
+    console.log("is_boosted tipi:", typeof data[0].is_boosted);
+  }
+  
   return data;
 }
 

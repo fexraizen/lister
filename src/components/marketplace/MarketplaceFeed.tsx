@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MarketCard } from '../listings/MarketCard';
-import { fetchListings, deleteListing, sortListings } from '../../lib/listings';
+import { fetchListings, deleteListing } from '../../lib/listings';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Filter } from 'lucide-react';
@@ -80,6 +80,16 @@ export function MarketplaceFeed({ category }: MarketplaceFeedProps) {
     };
   }, [selectedCategory]);
 
+  // Fisher-Yates Shuffle Algorithm
+  const fisherYatesShuffle = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const loadListings = async () => {
     try {
       setLoading(true);
@@ -91,28 +101,29 @@ export function MarketplaceFeed({ category }: MarketplaceFeedProps) {
       }
 
       const data = await fetchListings(filters);
+      
       // Filter to only show active and out_of_stock listings
-      const visibleListings = (data as Listing[]).filter(
+      const all = (data as Listing[]).filter(
         l => l.status === 'active' || l.status === 'out_of_stock'
       );
       
-      // Separate boosted and non-boosted listings
-      const boostedListings = visibleListings.filter(l => l.is_boosted);
-      const regularListings = visibleListings.filter(l => !l.is_boosted);
+      // Type-safe filtering: handle both boolean and string values
+      const boosted = all.filter(l => l.is_boosted === true || String(l.is_boosted) === 'true');
+      const regular = all.filter(l => !boosted.includes(l));
       
-      // Shuffle boosted listings for randomness
-      const shuffledBoosted = boostedListings.sort(() => Math.random() - 0.5);
+      console.log('Boosted count:', boosted.length, 'Regular count:', regular.length);
+      console.log('Boosted titles:', boosted.map(l => l.title));
       
-      // Take first 6 boosted listings, or fill with regular listings if less than 6
-      let finalListings = shuffledBoosted.slice(0, 6);
+      // Shuffle each group independently
+      const shuffledBoosted = fisherYatesShuffle(boosted);
+      const shuffledRegular = fisherYatesShuffle(regular);
       
-      if (finalListings.length < 6) {
-        const remainingSlots = 6 - finalListings.length;
-        const sortedRegular = sortListings(regularListings);
-        finalListings = [...finalListings, ...sortedRegular.slice(0, remainingSlots)];
-      }
+      // Combine: boosted first, then regular
+      const final = [...shuffledBoosted, ...shuffledRegular].slice(0, 6);
       
-      setListings(finalListings);
+      console.log('Final Liste:', final.map(i => ({ title: i.title, is_boosted: i.is_boosted })));
+      
+      setListings(final);
     } catch (err: any) {
       setError(err.message || 'İlanlar yüklenemedi');
     } finally {

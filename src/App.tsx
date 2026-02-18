@@ -47,7 +47,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user || !profile?.is_admin) {
+  if (!user || (profile?.role !== 'admin' && profile?.role !== 'super_admin' && profile?.role !== 'moderator')) {
     return <Navigate to="/" replace />;
   }
 

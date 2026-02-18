@@ -103,8 +103,7 @@ export function AdminPage() {
       if (error) throw error;
 
       // Check if user has admin access
-      if (!freshProfile?.is_admin && 
-          freshProfile?.role !== 'admin' && 
+      if (freshProfile?.role !== 'admin' && 
           freshProfile?.role !== 'super_admin' &&
           freshProfile?.role !== 'moderator') {
         navigate('/');
@@ -750,7 +749,7 @@ export function AdminPage() {
     }
   };
 
-  if (!profile?.is_admin && profile?.role !== 'admin' && profile?.role !== 'super_admin') {
+  if (profile?.role !== 'admin' && profile?.role !== 'super_admin' && profile?.role !== 'moderator') {
     return null;
   }
 

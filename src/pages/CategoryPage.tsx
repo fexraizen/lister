@@ -109,16 +109,22 @@ export function CategoryPage() {
       filtered = filtered.filter(l => l.price <= parseFloat(maxPrice));
     }
 
-    // Sort
+    // Type-safe filtering: handle both boolean and string values
+    const boosted = filtered.filter(l => l.is_boosted === true || String(l.is_boosted) === 'true');
+    const regular = filtered.filter(l => !boosted.includes(l));
+
+    // Sort regular listings only (boosted stay at top)
+    let sortedRegular = [...regular];
     if (sortBy === 'price-asc') {
-      filtered.sort((a, b) => a.price - b.price);
+      sortedRegular.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-desc') {
-      filtered.sort((a, b) => b.price - a.price);
+      sortedRegular.sort((a, b) => b.price - a.price);
     } else {
-      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedRegular.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
-    return filtered;
+    // Combine: boosted first (unsorted), then sorted regular
+    return [...boosted, ...sortedRegular];
   };
 
   const clearFilters = () => {
