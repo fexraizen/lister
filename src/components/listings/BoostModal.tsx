@@ -40,22 +40,21 @@ export function BoostModal({ listingId, isOpen, onClose, onSuccess }: BoostModal
         return;
       }
 
-      const { data, error } = await supabase.rpc('purchase_boost', {
+      const { error } = await supabase.rpc('purchase_boost', {
         p_listing_id: listingId,
         p_user_id: user.id,
         p_cost: selectedOption.cost,
         p_duration_hours: selectedOption.hours,
       });
 
-      if (error) throw error;
-
-      if (data?.success) {
-        showToast('🚀 İlan başarıyla öne çıkarıldı!', 'success');
-        onSuccess();
-        onClose();
-      } else {
-        showToast(data?.error || 'Boost satın alınamadı', 'error');
+      if (error) {
+        throw error;
       }
+
+      // No error means success
+      showToast('🚀 İlan başarıyla öne çıkarıldı!', 'success');
+      onSuccess();
+      onClose();
     } catch (err: any) {
       showToast(err.message || 'Boost satın alınamadı', 'error');
     } finally {

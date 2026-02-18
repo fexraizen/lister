@@ -15,7 +15,7 @@ interface ListingFormProps {
 
 export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
   const { user, profile } = useAuth();
-  const { showToast, showConfirm } = useNotification();
+  const { showToast } = useNotification();
   const navigate = useNavigate();
   const [shops, setShops] = useState<Shop[]>([]);
   const [sellerType, setSellerType] = useState<'individual' | 'shop'>('individual');
@@ -136,9 +136,13 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
     }
 
     try {
+      if (!user?.id) {
+        throw new Error('Kullanıcı oturumu bulunamadı');
+      }
+
       // Step 1: Charge listing fee
-      const { data: feeResult, error: feeError } = await supabase.rpc('charge_listing_fee', {
-        p_user_id: user?.id,
+      const { error: feeError } = await supabase.rpc('charge_listing_fee', {
+        p_user_id: user.id,
         p_fee: LISTING_FEE
       });
 
@@ -147,15 +151,11 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
         throw new Error('İlan ücreti alınamadı. Lütfen tekrar deneyin.');
       }
 
-      if (!feeResult.success) {
-        throw new Error(feeResult.error || 'İlan ücreti alınamadı');
-      }
-
-      console.log('✅ Listing fee charged successfully. New balance:', feeResult.new_balance);
+      console.log('✅ Listing fee charged successfully');
 
       // Step 2: Create listing
       const listingData: any = {
-        user_id: user?.id,
+        user_id: user.id,
         shop_id: sellerType === 'shop' ? selectedShopId : null,
         title,
         description,
