@@ -98,43 +98,7 @@ export function ListingDetailPage() {
     }
   };
 
-  const handlePurchase = async () => {
-    if (!listing || !user || !profile) return;
 
-    if (profile.balance < listing.price) {
-      showToast(`Yetersiz bakiye. Bakiyeniz: $${profile.balance.toFixed(2)}, Gerekli: $${listing.price.toFixed(2)}`, 'error');
-      return;
-    }
-
-    showConfirm({
-      title: 'Satın Alma Onayı',
-      message: `"${listing.title}" ilanını $${listing.price.toFixed(2)} karşılığında satın almak istiyor musunuz?`,
-      confirmText: 'Satın Al',
-      cancelText: 'İptal',
-      onConfirm: async () => {
-        setPurchasing(true);
-        try {
-          const result = await purchaseListing(
-            user.id,
-            listing.user_id,
-            listing.id,
-            listing.price
-          );
-
-          if (result.success) {
-            showToast('Satın alma başarılı! 🎉', 'success');
-            navigate('/');
-          } else {
-            showToast(result.error || 'Satın alma başarısız', 'error');
-          }
-        } catch (err: any) {
-          showToast(err.message || 'Satın alma başarısız', 'error');
-        } finally {
-          setPurchasing(false);
-        }
-      }
-    });
-  };
 
   const getCategoryLabel = () => {
     if (!listing) return '';

@@ -35,9 +35,10 @@ export async function createDepositRequest(userId: string, amount: number) {
   const { data, error } = await supabase
     .from('transactions')
     .insert([{
-      buyer_id: userId,
+      user_id: userId,
       amount,
-      status: 'pending',
+      type: 'deposit',
+      description: 'Bakiye yükleme talebi',
     }])
     .select()
     .single();
@@ -47,15 +48,7 @@ export async function createDepositRequest(userId: string, amount: number) {
 }
 
 export async function approveDeposit(transactionId: string, userId: string, amount: number) {
-  // Start a transaction-like operation
-  const { error: txError } = await supabase
-    .from('transactions')
-    .update({ status: 'completed' } as any)
-    .eq('id', transactionId);
-
-  if (txError) throw txError;
-
-  // Update user balance - using direct update since increment_balance might not exist
+  // Update user balance
   const { data: profile } = await supabase
     .from('profiles')
     .select('balance')
@@ -69,14 +62,17 @@ export async function approveDeposit(transactionId: string, userId: string, amou
       .eq('id', userId);
 
     if (balanceError) {
-      // If balance update fails, revert transaction status
-      await supabase
-        .from('transactions')
-        .update({ status: 'pending' } as any)
-        .eq('id', transactionId);
       throw balanceError;
     }
   }
+
+  // Mark transaction as completed by deleting it (or you could add a status field)
+  const { error: deleteError } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', transactionId);
+
+  if (deleteError) throw deleteError;
 }
 
 export async function fetchUserTransactions(userId: string) {
@@ -91,17 +87,16 @@ export async function fetchUserTransactions(userId: string) {
 }
 
 export async function fetchPendingDeposits() {
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('transactions')
     .select(`
       *,
-      buyer_profile:buyer_id (
+      profiles:user_id (
         username,
         balance
       )
     `)
-    .eq('status', 'pending')
-    .is('seller_id', null)
+    .eq('type', 'deposit')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
