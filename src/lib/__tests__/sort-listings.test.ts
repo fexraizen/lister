@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { sortListings, Listing } from '../listings';
+import { sortListings } from '../listings';
+import type { Listing } from '../listings';
 
 describe('Listing Sort Logic - Property-Based Tests', () => {
   // Feature: marketplace-advanced-features, Property 4: Boosted listings prioritization
