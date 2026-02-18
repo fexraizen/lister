@@ -117,7 +117,7 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
 
   return (
     <>
-      <div className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300">
+      <div className="group bg-white rounded-[2rem] overflow-hidden border border-gray-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300">
         {/* Image */}
         <div 
           onClick={handleCardClick}
@@ -151,7 +151,7 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
           </div>
 
           {isBoosted && (
-            <div className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-lg">
+            <div className="absolute top-4 right-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-md">
               <Zap className="w-3 h-3" />
               <span>Öne Çıkan</span>
             </div>
@@ -163,56 +163,14 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
           {/* Title */}
           <h3 
             onClick={handleCardClick}
-            className="text-xl font-bold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+            className="text-xl font-normal text-[#1a1a1a] mb-2 cursor-pointer hover:text-emerald-600 transition-colors line-clamp-2"
           >
             {listing.title}
           </h3>
 
-          {/* Description */}
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-            {listing.description}
-          </p>
-
-          {/* Category-specific fields */}
-          {listing.category === 'vehicle' && (listing.mileage !== null || listing.speed !== null) && (
-            <div className="flex gap-4 mb-4 pb-4 border-b border-gray-100">
-              {listing.mileage !== null && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium">{listing.mileage.toLocaleString()} km</span>
-                </div>
-              )}
-              {listing.speed !== null && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                  <Gauge className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium">{listing.speed} km/s</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Seller info - Show shop if available, otherwise show individual seller */}
-          {shop ? (
-            <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-              <StoreIcon className="w-4 h-4 text-gray-400" />
-              <span>{shop.name}</span>
-            </div>
-          ) : sellerProfile && (
-            <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-              <UserIcon className="w-4 h-4 text-gray-400" />
-              <span>{sellerProfile.username}</span>
-            </div>
-          )}
-
-          {/* View count */}
-          <div className="flex items-center gap-1.5 mb-4 text-sm text-gray-500">
-            <Eye className="w-4 h-4" />
-            <span>{listing.view_count.toLocaleString()} görüntülenme</span>
-          </div>
-
-          {/* Price */}
+          {/* Price - Prominent */}
           <div className="mb-4">
-            <div className="text-3xl font-bold text-gray-900">
+            <div className="text-3xl font-light text-emerald-600">
               ${listing.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
@@ -225,14 +183,14 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
                   e.stopPropagation();
                   navigate(`/listing/${listing.id}/edit`);
                 }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-600 rounded-[1.5rem] hover:bg-blue-100 transition-all duration-300 text-sm font-medium"
               >
                 <Edit className="w-4 h-4" />
                 <span>Düzenle</span>
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 text-red-600 rounded-[1.5rem] hover:bg-red-100 transition-all duration-300 text-sm font-medium"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Sil</span>
@@ -242,10 +200,10 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
             <button
               onClick={handleContactClick}
               disabled={isOutOfStock}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all font-semibold ${
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[1.5rem] transition-all duration-300 font-medium ${
                 isOutOfStock
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg'
+                  ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:shadow-md'
               }`}
             >
               <MessageCircle className="w-5 h-5" />
@@ -254,7 +212,7 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
           ) : (
             <button
               disabled
-              className="w-full px-4 py-3 bg-gray-100 text-gray-400 rounded-xl cursor-not-allowed font-semibold"
+              className="w-full px-4 py-3 bg-gray-100 text-gray-400 rounded-[1.5rem] cursor-not-allowed font-medium"
             >
               Pasif
             </button>

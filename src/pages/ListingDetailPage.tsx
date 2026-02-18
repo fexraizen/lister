@@ -168,11 +168,11 @@ export function ListingDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#f8f9fa]">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-emerald-500 mx-auto"></div>
             <p className="mt-4 text-gray-600">İlan yükleniyor...</p>
           </div>
         </div>
@@ -200,14 +200,14 @@ export function ListingDetailPage() {
   const boostEndDate = listing.boosted_until ? new Date(listing.boosted_until) : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8f9fa]">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-[#1a1a1a] mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="font-medium">Geri Dön</span>
@@ -217,7 +217,7 @@ export function ListingDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+            <div className="bg-white border border-gray-200 rounded-[2rem] overflow-hidden shadow-sm">
               <div className="relative h-96 bg-gray-100">
                 {listing.image_url ? (
                   <img
@@ -226,7 +226,7 @@ export function ListingDetailPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                     <div className="text-9xl opacity-20">
                       {listing.category === 'vehicle' && '🚗'}
                       {listing.category === 'real_estate' && '🏢'}
@@ -246,12 +246,12 @@ export function ListingDetailPage() {
             </div>
 
             {/* Details */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+            <div className="bg-white border border-gray-200 rounded-[2rem] p-8 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-sm font-semibold">
                   {getCategoryLabel()}
                 </span>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="w-4 h-4" />
                   <span>{new Date(listing.created_at).toLocaleDateString('tr-TR')}</span>
                 </div>
@@ -259,24 +259,24 @@ export function ListingDetailPage() {
 
               {/* Boost Badge */}
               {isBoosted && (
-                <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-lg">
+                <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-[1.5rem] shadow-sm">
                   <Zap className="w-5 h-5" />
                   <span className="font-semibold">⚡ Öne Çıkan İlan</span>
                 </div>
               )}
 
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">{listing.title}</h1>
+              <h1 className="text-4xl font-bold text-[#1a1a1a] mb-4">{listing.title}</h1>
 
               {/* Boost Timer for Owner */}
               {isOwner && isBoosted && boostEndDate && (
-                <div className="mb-6 p-4 bg-purple-50 border-2 border-purple-200 rounded-xl">
+                <div className="mb-6 p-4 bg-purple-50 border-2 border-purple-200 rounded-[1.5rem]">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-purple-100 rounded-lg">
                       <Clock className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-purple-900">Boost Aktif</p>
-                      <p className="text-sm text-purple-700">
+                      <p className="text-sm font-medium text-purple-700">Boost Aktif</p>
+                      <p className="text-sm text-purple-600">
                         Bitiş: {boostEndDate.toLocaleDateString('tr-TR', {
                           day: '2-digit',
                           month: '2-digit',
@@ -299,26 +299,26 @@ export function ListingDetailPage() {
               {/* Technical Specifications */}
               {listing.category === 'vehicle' && (listing.mileage !== null || listing.speed !== null) && (
                 <div className="mt-8 pt-8 border-t border-gray-200">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Teknik Özellikler</h2>
+                  <h2 className="text-2xl font-bold text-[#1a1a1a] mb-4">Teknik Özellikler</h2>
                   <div className="grid grid-cols-2 gap-4">
                     {listing.mileage !== null && (
-                      <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="bg-gray-50 rounded-[1.5rem] p-4">
                         <div className="flex items-center gap-2 text-gray-600 mb-1">
                           <MapPin className="w-5 h-5" />
                           <span className="text-sm font-medium">Kilometre</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-2xl font-bold text-[#1a1a1a]">
                           {listing.mileage.toLocaleString()} km
                         </p>
                       </div>
                     )}
                     {listing.speed !== null && (
-                      <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="bg-gray-50 rounded-[1.5rem] p-4">
                         <div className="flex items-center gap-2 text-gray-600 mb-1">
                           <Gauge className="w-5 h-5" />
                           <span className="text-sm font-medium">Maksimum Hız</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-2xl font-bold text-[#1a1a1a]">
                           {listing.speed} km/s
                         </p>
                       </div>
@@ -333,10 +333,10 @@ export function ListingDetailPage() {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               {/* Price Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+              <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-200">
                 <div className="mb-6">
                   <p className="text-sm text-gray-600 mb-1">Fiyat</p>
-                  <p className="text-4xl font-bold text-gray-900">
+                  <p className="text-4xl font-bold text-[#1a1a1a]">
                     ${listing.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -344,7 +344,7 @@ export function ListingDetailPage() {
                 {isOwner && isActive && (
                   <button
                     onClick={() => setShowBoostModal(true)}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-lg mb-4"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-[1.5rem] hover:shadow-lg transition-all font-semibold text-lg mb-4"
                   >
                     <Rocket className="w-5 h-5" />
                     <span>🚀 İlanı Öne Çıkar</span>
@@ -355,14 +355,14 @@ export function ListingDetailPage() {
                   <div className="flex gap-2 mb-4">
                     <button
                       onClick={() => navigate(`/listing/${listing.id}/edit`)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors font-semibold"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 rounded-[1.5rem] hover:bg-blue-100 transition-colors font-semibold"
                     >
                       <Edit className="w-5 h-5" />
                       <span>Düzenle</span>
                     </button>
                     <button
                       onClick={handleDeleteListing}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-semibold"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-[1.5rem] hover:bg-red-100 transition-colors font-semibold"
                     >
                       <Trash2 className="w-5 h-5" />
                       <span>Sil</span>
@@ -375,10 +375,10 @@ export function ListingDetailPage() {
                     <button
                       onClick={() => setShowContactModal(true)}
                       disabled={isOutOfStock}
-                      className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl transition-all font-semibold text-lg mb-3 ${
+                      className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-[1.5rem] transition-all font-semibold text-lg mb-3 ${
                         isOutOfStock
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg'
+                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-lg'
                       }`}
                     >
                       <MessageCircle className="w-5 h-5" />
@@ -386,7 +386,7 @@ export function ListingDetailPage() {
                     </button>
                     <button
                       onClick={() => setShowReportModal(true)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-50 text-orange-600 rounded-xl hover:bg-orange-100 transition-colors font-semibold"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-50 text-orange-600 rounded-[1.5rem] hover:bg-orange-100 transition-colors font-semibold"
                     >
                       <AlertTriangle className="w-5 h-5" />
                       <span>İlanı Şikayet Et</span>
@@ -395,7 +395,7 @@ export function ListingDetailPage() {
                 )}
 
                 {!isOwner && !isActive && !isOutOfStock && (
-                  <div className="w-full px-6 py-4 bg-gray-100 text-gray-500 rounded-xl text-center font-semibold text-lg">
+                  <div className="w-full px-6 py-4 bg-gray-100 text-gray-500 rounded-[1.5rem] text-center font-semibold text-lg">
                     Bu İlan Pasif
                   </div>
                 )}
@@ -403,8 +403,8 @@ export function ListingDetailPage() {
 
               {/* Seller Card - Show shop if available, otherwise show individual seller */}
               {shop ? (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Mağaza Bilgileri</h3>
+                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Mağaza Bilgileri</h3>
                   
                   <div className="space-y-4">
                     {/* Shop Logo & Name */}
@@ -467,8 +467,8 @@ export function ListingDetailPage() {
                   </div>
                 </div>
               ) : sellerProfile && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Satıcı Bilgileri</h3>
+                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Satıcı Bilgileri</h3>
                   
                   <div className="space-y-4">
                     {/* Seller Avatar & Name */}

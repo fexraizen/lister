@@ -199,13 +199,13 @@ export function CategoryPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8f9fa]">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-2 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-black text-[#1a1a1a] mb-2 tracking-tight">
             {config.title}
           </h1>
           <p className="text-lg text-gray-600">{config.description}</p>
@@ -215,7 +215,7 @@ export function CategoryPage() {
         <div className="lg:hidden mb-6">
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-[1.5rem] text-gray-700 font-medium hover:bg-gray-50 transition-colors shadow-sm"
           >
             <Filter className="w-5 h-5" />
             <span>Filtreler</span>
@@ -246,7 +246,7 @@ export function CategoryPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Desktop Sidebar */}
           <div className="hidden lg:block">
-            <div className="sticky top-24 bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div className="sticky top-24 bg-white rounded-[2rem] p-6 shadow-sm border border-gray-200">
               <FilterSidebar />
             </div>
           </div>
@@ -256,15 +256,15 @@ export function CategoryPage() {
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-emerald-500 mx-auto"></div>
                   <p className="mt-4 text-gray-600">İlanlar yükleniyor...</p>
                 </div>
               </div>
             ) : filteredListings.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+              <div className="text-center py-16 bg-white rounded-[2rem] border border-gray-200 shadow-sm">
                 <div className="text-6xl mb-4">🔍</div>
-                <p className="text-xl text-gray-700 mb-2">İlan bulunamadı</p>
-                <p className="text-gray-500">Filtrelerinizi değiştirmeyi deneyin</p>
+                <p className="text-xl text-[#1a1a1a] mb-2">İlan bulunamadı</p>
+                <p className="text-gray-600">Filtrelerinizi değiştirmeyi deneyin</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

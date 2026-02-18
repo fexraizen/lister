@@ -60,34 +60,34 @@ export function MyListingsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8f9fa]">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Listings</h1>
+          <h1 className="text-3xl font-bold text-[#1a1a1a]">İlan Mağazam</h1>
           <button
             onClick={() => navigate('/listings/new')}
-            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-[1.5rem] hover:bg-emerald-700 transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
-            <span>Create Listing</span>
+            <span>Yeni İlan</span>
           </button>
         </div>
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading your listings...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">İlanlarınız yükleniyor...</p>
           </div>
         ) : listings.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-600 mb-4">You haven't created any listings yet</p>
+          <div className="text-center py-12 bg-white rounded-[2rem] border border-gray-200 shadow-sm">
+            <p className="text-xl text-gray-700 mb-4">Henüz ilan oluşturmadınız</p>
             <button
               onClick={() => navigate('/listings/new')}
-              className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-emerald-600 text-white px-6 py-3 rounded-[1.5rem] hover:bg-emerald-700 transition-colors shadow-sm"
             >
-              Create Your First Listing
+              İlk İlanınızı Oluşturun
             </button>
           </div>
         ) : (

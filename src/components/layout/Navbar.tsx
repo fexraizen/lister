@@ -36,21 +36,20 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo - LISTER Brand */}
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
-                <span className="text-white font-black text-xl">L</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-[1rem] flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                <span className="text-white font-bold text-xl">L</span>
               </div>
             </div>
             <div className="hidden md:block">
-              <span className="text-2xl font-black text-gray-900 tracking-tight">
+              <span className="text-2xl font-light text-[#1a1a1a]">
                 LISTER
               </span>
-              <p className="text-xs text-gray-500 -mt-1 font-medium">Premium Marketplace</p>
             </div>
           </Link>
 
@@ -60,32 +59,32 @@ export function Navbar() {
               <>
                 <Link
                   to="/"
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-all duration-300 font-normal"
                 >
-                  <Home className="w-5 h-5" />
-                  <span className="font-medium">Ana Sayfa</span>
+                  <Home className="w-4 h-4" />
+                  <span>Ana Sayfa</span>
                 </Link>
                 <Link
                   to="/my-listings"
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-all duration-300 font-normal"
                 >
-                  <Package className="w-5 h-5" />
-                  <span className="font-medium">İlanlarım</span>
+                  <Package className="w-4 h-4" />
+                  <span>İlan Mağazam</span>
                 </Link>
                 <Link
                   to="/shop/manage"
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-all duration-300 font-normal"
                 >
-                  <Store className="w-5 h-5" />
-                  <span className="font-medium">Mağazalarım</span>
+                  <Store className="w-4 h-4" />
+                  <span>Mağazalarım</span>
                 </Link>
                 {(profile?.is_admin || profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'moderator') && (
                   <Link
                     to="/admin"
-                    className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-all duration-300 font-normal"
                   >
-                    <Shield className="w-5 h-5" />
-                    <span className="font-medium">Yönetim Paneli</span>
+                    <Shield className="w-4 h-4" />
+                    <span>Kontrol Merkezi</span>
                   </Link>
                 )}
               </>
@@ -93,79 +92,61 @@ export function Navbar() {
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {user && profile ? (
               <>
-                {/* Test Balance Button */}
-                <button
-                  onClick={handleAddTestBalance}
-                  disabled={loadingBalance}
-                  className="hidden md:flex items-center gap-2 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 px-4 py-2 rounded-xl hover:shadow-md transition-all disabled:opacity-50"
-                  title="Test bakiyesi ekle"
-                >
-                  <Coins className="w-5 h-5 text-yellow-600" />
-                  <span className="text-sm font-semibold text-yellow-700">
-                    {loadingBalance ? 'Yükleniyor...' : '💰 Test Bakiyesi (+$50K)'}
-                  </span>
-                </button>
-
-                {/* Balance with glassmorphism */}
+                {/* Balance - Natural Badge */}
                 <Link
                   to="/wallet"
-                  className="hidden md:flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 px-4 py-2 rounded-xl hover:shadow-md transition-all backdrop-blur-sm"
+                  className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-[1.5rem] hover:bg-emerald-100 transition-all duration-300"
                 >
-                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-600 font-medium">Bakiye</span>
-                    <span className="text-green-700 font-bold">
-                      ${profile.balance?.toFixed(2) || '0.00'}
-                    </span>
-                  </div>
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <span className="text-[#1a1a1a] font-medium text-sm">
+                    ${profile.balance?.toFixed(2) || '0.00'}
+                  </span>
                 </Link>
 
-                {/* Create Listing Button */}
+                {/* Create Listing Button - Natural */}
                 <button
                   onClick={() => navigate('/listings/new')}
-                  className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
+                  className="hidden md:flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-[1.5rem] font-medium text-sm shadow-sm hover:shadow-md transition-all duration-300"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                   <span>İlan Oluştur</span>
                 </button>
 
-                {/* User Menu */}
-                <div className="hidden md:flex items-center gap-3">
+                {/* User Menu - Natural */}
+                <div className="hidden md:flex items-center gap-2">
                   <Link
                     to="/profile/edit"
-                    className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-[1.5rem] border border-gray-200 transition-all duration-300"
                   >
-                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <div className="w-7 h-7 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center shadow-sm">
                       {profile.avatar_url ? (
                         <img
                           src={profile.avatar_url}
                           alt={profile.username}
-                          className="w-full h-full rounded-lg object-cover"
+                          className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
-                        <User className="w-5 h-5 text-white" />
+                        <User className="w-4 h-4 text-white" />
                       )}
                     </div>
-                    <span className="text-gray-700 font-semibold">{profile.username}</span>
+                    <span className="text-[#1a1a1a] font-medium text-sm">{profile.username}</span>
                   </Link>
                   <button
                     onClick={handleSignOut}
-                    className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-300"
                     title="Çıkış Yap"
                   >
-                    <LogOut className="w-5 h-5" />
+                    <LogOut className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Mobile Menu Button */}
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="md:hidden p-2 text-gray-600 hover:text-blue-600"
+                  className="md:hidden p-2 text-gray-600 hover:text-emerald-600"
                 >
                   {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </button>
@@ -173,9 +154,9 @@ export function Navbar() {
             ) : (
               <button
                 onClick={() => navigate('/auth')}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-[1.5rem] font-medium text-sm shadow-sm hover:shadow-md transition-all duration-300"
               >
-                Giriş Yap / Kayıt Ol
+                Giriş Yap
               </button>
             )}
           </div>
@@ -188,10 +169,10 @@ export function Navbar() {
               <Link
                 to="/wallet"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-3 rounded-lg"
+                className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-[1.5rem]"
               >
-                <DollarSign className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-green-700">${profile?.balance?.toFixed(2) || '0.00'}</span>
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+                <span className="font-medium text-[#1a1a1a]">${profile?.balance?.toFixed(2) || '0.00'}</span>
               </Link>
               
               <button
@@ -199,7 +180,7 @@ export function Navbar() {
                   navigate('/listings/new');
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium"
+                className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-3 rounded-[1.5rem] font-medium"
               >
                 <Plus className="w-5 h-5" />
                 <span>İlan Oluştur</span>
@@ -208,7 +189,7 @@ export function Navbar() {
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2"
+                className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 px-4 py-2"
               >
                 <Home className="w-5 h-5" />
                 <span>Ana Sayfa</span>
@@ -217,16 +198,16 @@ export function Navbar() {
               <Link
                 to="/my-listings"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2"
+                className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 px-4 py-2"
               >
                 <Package className="w-5 h-5" />
-                <span>İlanlarım</span>
+                <span>İlan Mağazam</span>
               </Link>
 
               <Link
                 to="/shop/manage"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2"
+                className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 px-4 py-2"
               >
                 <Store className="w-5 h-5" />
                 <span>Mağazalarım</span>
@@ -236,16 +217,16 @@ export function Navbar() {
                 <Link
                   to="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-4 py-2"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 px-4 py-2"
                 >
                   <Shield className="w-5 h-5" />
-                  <span>Yönetim Paneli</span>
+                  <span>Kontrol Merkezi</span>
                 </Link>
               )}
 
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700 px-4 py-2 mt-2 border-t border-gray-200"
+                className="flex items-center gap-2 text-red-500 hover:text-red-600 px-4 py-2 mt-2 border-t border-gray-200"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Çıkış Yap</span>

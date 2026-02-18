@@ -78,7 +78,7 @@ export function WalletPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#f8f9fa]">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <p className="text-center text-gray-600">Cüzdanınızı görüntülemek için giriş yapın</p>
@@ -88,13 +88,13 @@ export function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8f9fa]">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Balance Card */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-8 text-white mb-8">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-[2rem] shadow-sm p-8 text-white mb-8">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -107,18 +107,18 @@ export function WalletPage() {
           </div>
 
           {/* Transaction History */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-2xl font-bold mb-6 text-gray-900">İşlem Geçmişi</h3>
+          <div className="bg-white rounded-[2rem] shadow-sm border border-gray-200 p-6">
+            <h3 className="text-2xl font-bold mb-6 text-[#1a1a1a]">İşlem Geçmişi</h3>
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
                 <p className="mt-4 text-gray-600">İşlemler yükleniyor...</p>
               </div>
             ) : transactions.length === 0 ? (
               <div className="text-center py-12">
                 <Wallet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 text-lg">Henüz işlem yok</p>
+                <p className="text-gray-700 text-lg">Henüz işlem yok</p>
                 <p className="text-gray-500 text-sm mt-2">İlk işleminiz burada görünecek</p>
               </div>
             ) : (
@@ -126,10 +126,10 @@ export function WalletPage() {
                 {transactions.map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-[1.5rem] hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="p-3 bg-gray-100 rounded-xl">
+                      <div className="p-3 bg-gray-100 rounded-[1rem]">
                         {getTransactionIcon(tx)}
                       </div>
                       <div className="flex-1">

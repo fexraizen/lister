@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
-import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign, Package, AlertTriangle } from 'lucide-react';
+import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign, Package, AlertTriangle, Settings } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -28,7 +28,7 @@ type Report = Database['public']['Tables']['reports']['Row'] & {
   };
 };
 
-type TabType = 'users' | 'shops' | 'listings' | 'reports' | 'activity' | 'financial';
+type TabType = 'users' | 'shops' | 'listings' | 'reports' | 'activity' | 'financial' | 'settings';
 
 type Toast = {
   id: string;
@@ -49,6 +49,15 @@ export function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [financialFilter, setFinancialFilter] = useState<'all' | 'expenses' | 'deposits'>('all');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  
+  // Site Settings State
+  const [siteSettings, setSiteSettings] = useState({
+    stats_security_rate: '99',
+    stats_security_text: 'Güvenli',
+    stats_support_title: 'Kesintisiz İletişim',
+    stats_approval_title: 'Hızlı Onay',
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
   
   // Modals
   const [editingBalance, setEditingBalance] = useState<{ userId: string; username: string; currentBalance: number } | null>(null);
@@ -184,10 +193,61 @@ export function AdminPage() {
 
       if (transactionsError) throw transactionsError;
       setTransactions(transactionsData || []);
+
+      // Load site settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('site_settings')
+        .select('key, value');
+
+      if (!settingsError && settingsData) {
+        const settingsObj: any = {};
+        settingsData.forEach((item) => {
+          settingsObj[item.key] = item.value;
+        });
+        setSiteSettings({
+          stats_security_rate: settingsObj.stats_security_rate || '99',
+          stats_security_text: settingsObj.stats_security_text || 'Güvenli',
+          stats_support_title: settingsObj.stats_support_title || 'Kesintisiz İletişim',
+          stats_approval_title: settingsObj.stats_approval_title || 'Hızlı Onay',
+        });
+      }
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user) return;
+
+    try {
+      setSettingsLoading(true);
+
+      // Update each setting
+      const updates = [
+        { key: 'stats_security_rate', value: siteSettings.stats_security_rate },
+        { key: 'stats_security_text', value: siteSettings.stats_security_text },
+        { key: 'stats_support_title', value: siteSettings.stats_support_title },
+        { key: 'stats_approval_title', value: siteSettings.stats_approval_title },
+      ];
+
+      for (const update of updates) {
+        const { error } = await supabase.rpc('update_site_setting', {
+          p_key: update.key,
+          p_value: JSON.stringify(update.value),
+          p_admin_id: user.id
+        });
+
+        if (error) throw error;
+      }
+
+      showToast('Sistem ayarları başarıyla güncellendi!', 'success');
+    } catch (err: any) {
+      console.error('Failed to save settings:', err);
+      showToast(err.message || 'Ayarlar kaydedilemedi', 'error');
+    } finally {
+      setSettingsLoading(false);
     }
   };
 
@@ -696,12 +756,12 @@ export function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#f8f9fa]">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Yönetim paneli yükleniyor...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Kontrol merkezi yükleniyor...</p>
           </div>
         </div>
       </div>
@@ -709,7 +769,7 @@ export function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f8f9fa]">
       <Navbar />
 
       {/* Toast Notifications */}
@@ -717,16 +777,16 @@ export function AdminPage() {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg min-w-[300px] ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-[1.5rem] shadow-sm min-w-[300px] ${
               toast.type === 'success' ? 'bg-green-600 text-white' :
               toast.type === 'error' ? 'bg-red-600 text-white' :
-              'bg-blue-600 text-white'
+              'bg-emerald-600 text-white'
             }`}
           >
             <span className="flex-1">{toast.message}</span>
             <button
               onClick={() => removeToast(toast.id)}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
+              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -737,13 +797,13 @@ export function AdminPage() {
       {/* Role Edit Modal */}
       {editingRole && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold mb-4">Rol Düzenle: {editingRole.username}</h3>
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4 text-[#1a1a1a]">Rol Düzenle: {editingRole.username}</h3>
             <p className="text-sm text-gray-600 mb-4">Mevcut rol: {getRoleBadge(editingRole.currentRole).text}</p>
             <select
               value={newRoleInput}
               onChange={(e) => setNewRoleInput(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
+              className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-[1rem] mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="user">Kullanıcı</option>
               <option value="moderator">Moderatör</option>
@@ -753,20 +813,20 @@ export function AdminPage() {
               </option>
             </select>
             {profile?.role !== 'super_admin' && (
-              <p className="text-xs text-amber-600 mb-4">
+              <p className="text-xs text-orange-600 mb-4">
                 ⚠️ Not: Sadece Super Admin, Super Admin rolü atayabilir
               </p>
             )}
             <div className="flex gap-2">
               <button
                 onClick={submitRoleEdit}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-[1.5rem] hover:bg-emerald-700 font-semibold transition-colors"
               >
                 Kaydet
               </button>
               <button
                 onClick={() => setEditingRole(null)}
-                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-[1.5rem] hover:bg-gray-200 font-semibold transition-colors"
               >
                 İptal
               </button>
@@ -778,27 +838,27 @@ export function AdminPage() {
       {/* Balance Edit Modal */}
       {editingBalance && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold mb-4">Bakiye Düzenle: {editingBalance.username}</h3>
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4 text-[#1a1a1a]">Bakiye Düzenle: {editingBalance.username}</h3>
             <p className="text-sm text-gray-600 mb-4">Mevcut bakiye: ${editingBalance.currentBalance.toFixed(2)}</p>
             <input
               type="number"
               value={newBalanceInput}
               onChange={(e) => setNewBalanceInput(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
+              className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-[1rem] mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="Yeni bakiye"
               step="0.01"
             />
             <div className="flex gap-2">
               <button
                 onClick={submitBalanceEdit}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-[1.5rem] hover:bg-emerald-700 font-semibold transition-colors"
               >
                 Kaydet
               </button>
               <button
                 onClick={() => setEditingBalance(null)}
-                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-[1.5rem] hover:bg-gray-200 font-semibold transition-colors"
               >
                 İptal
               </button>
@@ -810,26 +870,26 @@ export function AdminPage() {
       {/* Shop Name Edit Modal */}
       {editingShopName && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold mb-4">Mağaza Adını Düzenle</h3>
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4 text-[#1a1a1a]">Mağaza Adını Düzenle</h3>
             <p className="text-sm text-gray-600 mb-4">Mevcut ad: {editingShopName.currentName}</p>
             <input
               type="text"
               value={newShopNameInput}
               onChange={(e) => setNewShopNameInput(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
+              className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-[1rem] mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="Yeni mağaza adı"
             />
             <div className="flex gap-2">
               <button
                 onClick={submitShopNameEdit}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-[1.5rem] hover:bg-emerald-700 font-semibold transition-colors"
               >
                 Kaydet
               </button>
               <button
                 onClick={() => setEditingShopName(null)}
-                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-[1.5rem] hover:bg-gray-200 font-semibold transition-colors"
               >
                 İptal
               </button>
@@ -840,66 +900,66 @@ export function AdminPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
-          <Shield className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Yönetim Paneli</h1>
+          <Shield className="w-8 h-8 text-emerald-600" />
+          <h1 className="text-3xl font-bold text-[#1a1a1a]">Kontrol Merkezi</h1>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Toplam Kullanıcı</p>
-                <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                <p className="text-3xl font-bold text-[#1a1a1a]">{users.length}</p>
               </div>
-              <Users className="w-12 h-12 text-blue-600 opacity-20" />
+              <Users className="w-12 h-12 text-emerald-500 opacity-20" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Toplam Mağaza</p>
-                <p className="text-3xl font-bold text-gray-900">{shops.length}</p>
+                <p className="text-3xl font-bold text-[#1a1a1a]">{shops.length}</p>
               </div>
-              <Store className="w-12 h-12 text-purple-600 opacity-20" />
+              <Store className="w-12 h-12 text-purple-500 opacity-20" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Onaylı Kullanıcılar</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-[#1a1a1a]">
                   {users.filter(u => u.is_verified).length}
                 </p>
               </div>
-              <CheckCircle2 className="w-12 h-12 text-green-600 opacity-20" />
+              <CheckCircle2 className="w-12 h-12 text-green-500 opacity-20" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white border border-gray-200 rounded-[2rem] p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Banlı Kullanıcılar</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-[#1a1a1a]">
                   {users.filter(u => u.is_banned).length}
                 </p>
               </div>
-              <Ban className="w-12 h-12 text-red-600 opacity-20" />
+              <Ban className="w-12 h-12 text-red-500 opacity-20" />
             </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+        <div className="bg-white border border-gray-200 rounded-[2rem] mb-8 shadow-sm">
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
                 activeTab === 'users'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
               }`}
             >
               <Users className="w-5 h-5" />
@@ -907,10 +967,10 @@ export function AdminPage() {
             </button>
             <button
               onClick={() => setActiveTab('shops')}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
                 activeTab === 'shops'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
               }`}
             >
               <Store className="w-5 h-5" />
@@ -918,10 +978,10 @@ export function AdminPage() {
             </button>
             <button
               onClick={() => setActiveTab('listings')}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
                 activeTab === 'listings'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
               }`}
             >
               <Package className="w-5 h-5" />
@@ -929,21 +989,21 @@ export function AdminPage() {
             </button>
             <button
               onClick={() => setActiveTab('reports')}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
                 activeTab === 'reports'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
               }`}
             >
               <AlertTriangle className="w-5 h-5" />
-              <span>Şikayetler</span>
+              <span>Bildirimler & Destek</span>
             </button>
             <button
               onClick={() => setActiveTab('activity')}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
                 activeTab === 'activity'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
               }`}
             >
               <ScrollText className="w-5 h-5" />
@@ -951,31 +1011,42 @@ export function AdminPage() {
             </button>
             <button
               onClick={() => setActiveTab('financial')}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
                 activeTab === 'financial'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
               }`}
             >
               <DollarSign className="w-5 h-5" />
               <span>💰 Finansal Geçmiş</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
+                activeTab === 'settings'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span>⚙️ Sistem Ayarları</span>
             </button>
           </div>
 
           <div className="p-6">
             {activeTab === 'users' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4">Kullanıcı Yönetimi</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">Kullanıcı Yönetimi</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4">Kullanıcı Adı</th>
-                        <th className="text-left py-3 px-4">Rol</th>
-                        <th className="text-left py-3 px-4">Bakiye</th>
-                        <th className="text-left py-3 px-4">Onaylı</th>
-                        <th className="text-left py-3 px-4">Banlı</th>
-                        <th className="text-left py-3 px-4">İşlemler</th>
+                      <tr className="border-b border-gray-200 bg-gray-50">
+                        <th className="text-left py-3 px-4 text-gray-700 font-semibold">Kullanıcı Adı</th>
+                        <th className="text-left py-3 px-4 text-gray-700 font-semibold">Rol</th>
+                        <th className="text-left py-3 px-4 text-gray-700 font-semibold">Bakiye</th>
+                        <th className="text-left py-3 px-4 text-gray-700 font-semibold">Onaylı</th>
+                        <th className="text-left py-3 px-4 text-gray-700 font-semibold">Banlı</th>
+                        <th className="text-left py-3 px-4 text-gray-700 font-semibold">İşlemler</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -984,17 +1055,17 @@ export function AdminPage() {
                         return (
                           <tr 
                             key={u.id} 
-                            className={`border-b border-gray-100 hover:bg-gray-50 ${
+                            className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                               u.is_banned ? 'bg-red-50' : ''
                             }`}
                           >
-                            <td className="py-3 px-4 font-medium">{u.username}</td>
+                            <td className="py-3 px-4 font-medium text-[#1a1a1a]">{u.username}</td>
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${roleBadge.color}`}>
                                 {roleBadge.text}
                               </span>
                             </td>
-                            <td className="py-3 px-4">${u.balance.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-gray-700">${u.balance.toFixed(2)}</td>
                             <td className="py-3 px-4">
                               {u.is_verified ? (
                                 <span className="text-green-600 font-bold">✓</span>
@@ -1022,7 +1093,7 @@ export function AdminPage() {
                                 )}
                                 <button
                                   onClick={() => handleEditBalance(u.id, u.username, u.balance)}
-                                  className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                  className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors"
                                   title="Bakiyeyi Düzenle"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -1031,7 +1102,7 @@ export function AdminPage() {
                                   onClick={() => handleToggleVerification(u.id, u.is_verified)}
                                   className={`p-2 rounded-lg transition-colors ${
                                     u.is_verified
-                                      ? 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                       : 'bg-green-50 text-green-600 hover:bg-green-100'
                                   }`}
                                   title={u.is_verified ? 'Onayı Kaldır' : 'Onayla'}
@@ -1060,7 +1131,7 @@ export function AdminPage() {
               </div>
             ) : activeTab === 'shops' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4">Mağaza Yönetimi</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">Mağaza Yönetimi</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1162,7 +1233,7 @@ export function AdminPage() {
               </div>
             ) : activeTab === 'listings' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4">İlan Yönetimi</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">İlan Yönetimi</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1239,7 +1310,7 @@ export function AdminPage() {
               </div>
             ) : activeTab === 'reports' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4">Şikayet Yönetimi</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">Bildirimler & Destek Yönetimi</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1368,7 +1439,7 @@ export function AdminPage() {
               </div>
             ) : activeTab === 'activity' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4">📜 Aktivite Logları</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">📜 Aktivite Logları</h2>
                 <p className="text-sm text-gray-600 mb-4">
                   Sistemdeki tüm kullanıcı aktivitelerini buradan takip edebilirsiniz.
                 </p>
@@ -1426,15 +1497,15 @@ export function AdminPage() {
               </div>
             ) : activeTab === 'financial' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4">💰 Finansal Geçmiş</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">💰 Finansal Geçmiş</h2>
                 
                 {/* Filter Buttons */}
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={() => setFinancialFilter('all')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    className={`px-4 py-2 rounded-[1rem] font-semibold transition-colors ${
                       financialFilter === 'all'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-emerald-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -1442,7 +1513,7 @@ export function AdminPage() {
                   </button>
                   <button
                     onClick={() => setFinancialFilter('expenses')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    className={`px-4 py-2 rounded-[1rem] font-semibold transition-colors ${
                       financialFilter === 'expenses'
                         ? 'bg-red-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1452,7 +1523,7 @@ export function AdminPage() {
                   </button>
                   <button
                     onClick={() => setFinancialFilter('deposits')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    className={`px-4 py-2 rounded-[1rem] font-semibold transition-colors ${
                       financialFilter === 'deposits'
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1561,6 +1632,119 @@ export function AdminPage() {
                       })()}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            ) : activeTab === 'settings' ? (
+              <div>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">⚙️ Sistem Ayarları</h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  Ana sayfadaki istatistik kartlarının içeriğini buradan düzenleyebilirsiniz.
+                </p>
+
+                <div className="max-w-2xl space-y-6">
+                  {/* Security Rate */}
+                  <div className="bg-gradient-to-br from-blue-50/40 to-white rounded-[1.5rem] p-6 border border-blue-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      🛡️ Güvenlik Oranı (Sadece Rakam)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={siteSettings.stats_security_rate}
+                      onChange={(e) => setSiteSettings({ ...siteSettings, stats_security_rate: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="99"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Ana sayfada "%{siteSettings.stats_security_rate}" olarak görünecek
+                    </p>
+                  </div>
+
+                  {/* Security Text */}
+                  <div className="bg-gradient-to-br from-blue-50/40 to-white rounded-[1.5rem] p-6 border border-blue-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      🛡️ Güvenlik Metni
+                    </label>
+                    <input
+                      type="text"
+                      value={siteSettings.stats_security_text}
+                      onChange={(e) => setSiteSettings({ ...siteSettings, stats_security_text: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Güvenli"
+                    />
+                  </div>
+
+                  {/* Approval Title */}
+                  <div className="bg-gradient-to-br from-amber-50/40 to-white rounded-[1.5rem] p-6 border border-amber-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ⚡ Onay Başlığı
+                    </label>
+                    <input
+                      type="text"
+                      value={siteSettings.stats_approval_title}
+                      onChange={(e) => setSiteSettings({ ...siteSettings, stats_approval_title: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Hızlı Onay"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      İlk kelime büyük, ikinci kelime küçük gösterilir
+                    </p>
+                  </div>
+
+                  {/* Support Title */}
+                  <div className="bg-gradient-to-br from-rose-50/40 to-white rounded-[1.5rem] p-6 border border-rose-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ✨ Destek Başlığı
+                    </label>
+                    <input
+                      type="text"
+                      value={siteSettings.stats_support_title}
+                      onChange={(e) => setSiteSettings({ ...siteSettings, stats_support_title: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      placeholder="Kesintisiz İletişim"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      İlk kelime büyük, ikinci kelime küçük gösterilir
+                    </p>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={settingsLoading}
+                      className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-[1.5rem] hover:bg-emerald-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      {settingsLoading ? 'Kaydediliyor...' : '💾 Ayarları Kaydet'}
+                    </button>
+                    <button
+                      onClick={loadData}
+                      disabled={settingsLoading}
+                      className="px-6 py-3 bg-gray-100 text-gray-700 rounded-[1.5rem] hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50"
+                    >
+                      🔄 Sıfırla
+                    </button>
+                  </div>
+
+                  {/* Preview */}
+                  <div className="bg-gradient-to-br from-emerald-50/40 to-white rounded-[1.5rem] p-6 border border-emerald-100">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">👁️ Önizleme</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-blue-100 text-center">
+                        <p className="text-2xl font-light text-[#1a1a1a]">%{siteSettings.stats_security_rate}</p>
+                        <p className="text-xs text-gray-600 mt-1">{siteSettings.stats_security_text}</p>
+                      </div>
+                      <div className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-amber-100 text-center">
+                        <p className="text-2xl font-light text-[#1a1a1a]">{siteSettings.stats_approval_title.split(' ')[0]}</p>
+                        <p className="text-xs text-gray-600 mt-1">{siteSettings.stats_approval_title.split(' ').slice(1).join(' ')}</p>
+                      </div>
+                      <div className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-rose-100 text-center">
+                        <p className="text-2xl font-light text-[#1a1a1a]">{siteSettings.stats_support_title.split(' ')[0]}</p>
+                        <p className="text-xs text-gray-600 mt-1">{siteSettings.stats_support_title.split(' ').slice(1).join(' ')}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : null}
