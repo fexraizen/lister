@@ -18,6 +18,7 @@ import { ListingEditPage } from './pages/ListingEditPage';
 import { SearchPage } from './pages/SearchPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { TicketDetailPage } from './pages/TicketDetailPage';
+import { FavoritesPage } from './pages/FavoritesPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -126,6 +127,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <MyListingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/favorites"
+        element={
+          <ProtectedRoute>
+            <FavoritesPage />
           </ProtectedRoute>
         }
       />

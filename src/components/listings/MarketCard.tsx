@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getShopById, type Shop } from '../../lib/shops';
 import { supabase } from '../../lib/supabase';
 import { ContactModal } from './ContactModal';
-import { Edit, Trash2, MessageCircle, Sparkles } from 'lucide-react';
+import { Edit, Trash2, MessageCircle, Sparkles, Heart } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Listing = Database['public']['Tables']['listings']['Row'] & {
@@ -26,6 +26,8 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
   const [shop, setShop] = useState<Shop | null>(null);
   const [sellerProfile, setSellerProfile] = useState<any>(null);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const isOwner = user?.id === listing.user_id;
   
   // Check if user is admin/moderator
@@ -48,7 +50,30 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
     } else {
       loadSellerProfile();
     }
-  }, [listing.shop_id, listing.user_id]);
+    if (user) {
+      checkFavoriteStatus();
+    }
+  }, [listing.shop_id, listing.user_id, user]);
+
+  const checkFavoriteStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('listing_id', listing.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setIsFavorited(true);
+        setFavoriteId(data.id);
+      }
+    } catch (err) {
+      console.error('Error checking favorite status:', err);
+    }
+  };
 
   const loadShop = async () => {
     if (!listing.shop_id) return;
@@ -86,6 +111,44 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
     e.stopPropagation();
     if (window.confirm('Bu ilanı silmek istediğinizden emin misiniz?')) {
       onDelete?.(listing.id);
+    }
+  };
+
+  const handleFavoriteToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      if (isFavorited && favoriteId) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('id', favoriteId);
+
+        if (error) throw error;
+        setIsFavorited(false);
+        setFavoriteId(null);
+      } else {
+        // Add to favorites
+        const { data, error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            listing_id: listing.id
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setIsFavorited(true);
+        setFavoriteId(data.id);
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
     }
   };
 
@@ -155,6 +218,22 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
               <Sparkles className="w-3 h-3" />
               <span>Öne Çıkan</span>
             </div>
+          )}
+
+          {/* Favorite Button */}
+          {!isOwner && (
+            <button
+              onClick={handleFavoriteToggle}
+              className="absolute bottom-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-md"
+            >
+              <Heart 
+                className={`w-5 h-5 transition-colors ${
+                  isFavorited 
+                    ? 'text-red-500 fill-red-500' 
+                    : 'text-slate-400'
+                }`}
+              />
+            </button>
           )}
         </div>
 
