@@ -15,6 +15,7 @@ import { ShopManagePage } from './pages/ShopManagePage';
 import { ShopEditPage } from './pages/ShopEditPage';
 import { ShopListingsPage } from './pages/ShopListingsPage';
 import { ListingEditPage } from './pages/ListingEditPage';
+import { SearchPage } from './pages/SearchPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/search" element={<SearchPage />} />
       <Route path="/listing/:id" element={<ListingDetailPage />} />
       <Route
         path="/listing/:id/edit"

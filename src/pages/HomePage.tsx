@@ -49,7 +49,6 @@ export function HomePage() {
         }
       } catch (err) {
         console.error('Failed to fetch site settings:', err);
-        // Use fallback values already set in state
       }
     };
 
@@ -80,7 +79,7 @@ export function HomePage() {
   useEffect(() => {
     if (activeListingsCount === 0) return;
 
-    const duration = 2000; // 2 seconds
+    const duration = 2000;
     const steps = 60;
     const increment = activeListingsCount / steps;
     let current = 0;
@@ -110,20 +109,20 @@ export function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-500 mx-auto"></div>
-          <p className="mt-4 text-[#1a1a1a] text-lg font-light">Yükleniyor...</p>
+          <p className="mt-4 text-slate-900 text-lg font-light">Yükleniyor...</p>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-slate-50">
       <Navbar />
 
-      {/* Hero Section - Warm & Organic */}
+      {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 via-white to-emerald-50">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
@@ -131,12 +130,14 @@ export function HomePage() {
           <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
         
-        <div className="container mx-auto px-4 py-20 md:py-28 relative">
+        <div className="container mx-auto px-4 py-12 md:py-16 relative">
           <div className="text-center max-w-5xl mx-auto">
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-light text-[#1a1a1a] mb-6 tracking-tight">
-              LISTER
-            </h1>
-            <p className="text-gray-600 mb-12 font-normal text-base tracking-wide">
+            <img 
+              src="https://i.imgur.com/8VuKSmM.png" 
+              alt="LISTER" 
+              className="h-28 w-auto mx-auto mb-6 object-contain"
+            />
+            <p className="text-slate-700 mb-8 font-normal text-base tracking-wide">
               Araç · Emlak · Ürün · Hizmet
             </p>
 
@@ -151,72 +152,72 @@ export function HomePage() {
             )}
           </div>
 
-          {/* Stats - Enhanced Dynamic Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-5xl mx-auto">
-            {/* Active Listings - Dynamic Count */}
-            <div className="bg-gradient-to-br from-emerald-50/40 to-white rounded-[2rem] p-6 shadow-md border border-emerald-100 text-center hover:-translate-y-1 transition-all duration-300 group">
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-10 max-w-4xl mx-auto">
+            {/* Active Listings */}
+            <div className="bg-white border border-slate-100 rounded-[1.5rem] p-4 shadow-md text-center hover:-translate-y-1 transition-all duration-300 group">
               <div className="relative">
-                <TrendingUp className="w-10 h-10 text-emerald-500 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+                <TrendingUp className="w-8 h-8 text-emerald-500 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <p className="text-3xl font-light text-[#1a1a1a] tabular-nums">
+              <p className="text-2xl font-light text-slate-900 tabular-nums">
                 {displayCount > 0 ? `${displayCount}+` : '...'}
               </p>
-              <p className="text-sm text-gray-600 font-normal mt-1">Aktif İlan</p>
+              <p className="text-xs text-slate-600 font-normal mt-1">Aktif İlan</p>
             </div>
 
-            {/* Security - Honest 99% */}
-            <div className="bg-gradient-to-br from-blue-50/40 to-white rounded-[2rem] p-6 shadow-md border border-blue-100 text-center hover:-translate-y-1 transition-all duration-300 group">
+            {/* Security */}
+            <div className="bg-white border border-slate-100 rounded-[1.5rem] p-4 shadow-md text-center hover:-translate-y-1 transition-all duration-300 group">
               <div className="relative">
-                <Shield className="w-10 h-10 text-blue-500 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
+                <Shield className="w-8 h-8 text-blue-500 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <p className="text-3xl font-light text-[#1a1a1a]">%{settings.stats_security_rate}</p>
-              <p className="text-sm text-gray-600 font-normal mt-1">{settings.stats_security_text}</p>
+              <p className="text-2xl font-light text-slate-900">%{settings.stats_security_rate}</p>
+              <p className="text-xs text-slate-600 font-normal mt-1">{settings.stats_security_text}</p>
             </div>
 
             {/* Fast Processing */}
-            <div className="bg-gradient-to-br from-amber-50/40 to-white rounded-[2rem] p-6 shadow-md border border-amber-100 text-center hover:-translate-y-1 transition-all duration-300 group">
+            <div className="bg-white border border-slate-100 rounded-[1.5rem] p-4 shadow-md text-center hover:-translate-y-1 transition-all duration-300 group">
               <div className="relative">
-                <Zap className="w-10 h-10 text-amber-500 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
+                <Zap className="w-8 h-8 text-amber-500 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <p className="text-3xl font-light text-[#1a1a1a]">{settings.stats_approval_title.split(' ')[0]}</p>
-              <p className="text-sm text-gray-600 font-normal mt-1">{settings.stats_approval_title.split(' ').slice(1).join(' ') || 'Onay'}</p>
+              <p className="text-2xl font-light text-slate-900">{settings.stats_approval_title.split(' ')[0]}</p>
+              <p className="text-xs text-slate-600 font-normal mt-1">{settings.stats_approval_title.split(' ').slice(1).join(' ') || 'Onay'}</p>
             </div>
 
             {/* 24/7 Support */}
-            <div className="bg-gradient-to-br from-rose-50/40 to-white rounded-[2rem] p-6 shadow-md border border-rose-100 text-center hover:-translate-y-1 transition-all duration-300 group">
+            <div className="bg-white border border-slate-100 rounded-[1.5rem] p-4 shadow-md text-center hover:-translate-y-1 transition-all duration-300 group">
               <div className="relative">
-                <Sparkles className="w-10 h-10 text-rose-500 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]" />
+                <Sparkles className="w-8 h-8 text-rose-500 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <p className="text-3xl font-light text-[#1a1a1a]">{settings.stats_support_title.split(' ')[0]}</p>
-              <p className="text-sm text-gray-600 font-normal mt-1">{settings.stats_support_title.split(' ').slice(1).join(' ') || 'İletişim'}</p>
+              <p className="text-2xl font-light text-slate-900">{settings.stats_support_title.split(' ')[0]}</p>
+              <p className="text-xs text-slate-600 font-normal mt-1">{settings.stats_support_title.split(' ').slice(1).join(' ') || 'İletişim'}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Categories - Warm & Natural */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-light text-[#1a1a1a] mb-3">
+      {/* Categories */}
+      <div className="container mx-auto px-4 py-10">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-light text-slate-900 mb-3">
             Kategoriler
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent mx-auto rounded-full"></div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {/* Vehicles */}
           <button
             onClick={() => handleCategoryClick('vehicle')}
-            className="group bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
+            className="group bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
           >
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300">
-              <Car className="w-7 h-7 text-blue-600" />
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 w-14 h-14 rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300">
+              <Car className="w-6 h-6 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-normal text-[#1a1a1a] mb-2">Araçlar</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <h3 className="text-xl font-normal text-slate-900 mb-2">Araçlar</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">
               Otomobil, motosiklet ve ticari araçlar
             </p>
-            <div className="mt-6 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+            <div className="mt-4 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
               <span>Keşfet</span>
               <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
             </div>
@@ -225,16 +226,16 @@ export function HomePage() {
           {/* Real Estate */}
           <button
             onClick={() => handleCategoryClick('real_estate')}
-            className="group bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
+            className="group bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
           >
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300">
-              <Home className="w-7 h-7 text-emerald-600" />
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 w-14 h-14 rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300">
+              <Home className="w-6 h-6 text-emerald-600" />
             </div>
-            <h3 className="text-2xl font-normal text-[#1a1a1a] mb-2">Emlak</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <h3 className="text-xl font-normal text-slate-900 mb-2">Emlak</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">
               Konut, işyeri ve arsa ilanları
             </p>
-            <div className="mt-6 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+            <div className="mt-4 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
               <span>Keşfet</span>
               <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
             </div>
@@ -243,16 +244,16 @@ export function HomePage() {
           {/* Items */}
           <button
             onClick={() => handleCategoryClick('item')}
-            className="group bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
+            className="group bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
           >
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300">
-              <Package2 className="w-7 h-7 text-amber-600" />
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 w-14 h-14 rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300">
+              <Package2 className="w-6 h-6 text-amber-600" />
             </div>
-            <h3 className="text-2xl font-normal text-[#1a1a1a] mb-2">Ürünler</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <h3 className="text-xl font-normal text-slate-900 mb-2">Ürünler</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">
               Elektronik, mobilya ve diğer ürünler
             </p>
-            <div className="mt-6 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+            <div className="mt-4 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
               <span>Keşfet</span>
               <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
             </div>
@@ -261,16 +262,16 @@ export function HomePage() {
           {/* Services */}
           <button
             onClick={() => handleCategoryClick('service')}
-            className="group bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
+            className="group bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:border-emerald-300 hover:shadow-md transition-all duration-300 cursor-pointer text-left hover:-translate-y-1"
           >
-            <div className="bg-gradient-to-br from-rose-50 to-rose-100 w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300">
-              <Briefcase className="w-7 h-7 text-rose-600" />
+            <div className="bg-gradient-to-br from-rose-50 to-rose-100 w-14 h-14 rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300">
+              <Briefcase className="w-6 h-6 text-rose-600" />
             </div>
-            <h3 className="text-2xl font-normal text-[#1a1a1a] mb-2">Hizmetler</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <h3 className="text-xl font-normal text-slate-900 mb-2">Hizmetler</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">
               Profesyonel hizmet ve danışmanlık
             </p>
-            <div className="mt-6 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+            <div className="mt-4 text-emerald-600 text-sm font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
               <span>Keşfet</span>
               <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
             </div>
@@ -279,8 +280,8 @@ export function HomePage() {
 
         {/* Marketplace Feed */}
         <div>
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-light text-[#1a1a1a] mb-3">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-light text-slate-900 mb-3">
               Öne Çıkan İlanlar
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent mx-auto rounded-full"></div>
@@ -289,13 +290,13 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Footer - Natural */}
-      <footer className="bg-white border-t border-gray-200 py-12 mt-20">
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-8 mt-12">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-[#1a1a1a] font-normal mb-2">
+          <p className="text-slate-900 font-normal mb-2">
             © 2024 LISTER
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-slate-600 text-sm">
             Güvenli ve Hızlı Alışveriş Platformu
           </p>
         </div>
