@@ -16,6 +16,8 @@ import { ShopEditPage } from './pages/ShopEditPage';
 import { ShopListingsPage } from './pages/ShopListingsPage';
 import { ListingEditPage } from './pages/ListingEditPage';
 import { SearchPage } from './pages/SearchPage';
+import { TicketsPage } from './pages/TicketsPage';
+import { TicketDetailPage } from './pages/TicketDetailPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -132,6 +134,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <WalletPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tickets"
+        element={
+          <ProtectedRoute>
+            <TicketsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tickets/:id"
+        element={
+          <ProtectedRoute>
+            <TicketDetailPage />
           </ProtectedRoute>
         }
       />

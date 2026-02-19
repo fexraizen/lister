@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, User, Plus, DollarSign, Menu, X, Search, Home, LayoutList, Store, Shield } from 'lucide-react';
+import { LogOut, User, Plus, DollarSign, Menu, X, Search, Home, LayoutList, Store, Shield, LifeBuoy } from 'lucide-react';
 import { useState } from 'react';
 
 export function Navbar() {
@@ -78,6 +78,13 @@ export function Navbar() {
               >
                 <Store className="w-4 h-4" />
                 <span>Mağazalarım</span>
+              </Link>
+              <Link
+                to="/tickets"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors duration-300 whitespace-nowrap"
+              >
+                <LifeBuoy className="w-4 h-4" />
+                <span>Destek</span>
               </Link>
               {(profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'moderator') && (
                 <Link
@@ -207,6 +214,15 @@ export function Navbar() {
               >
                 <User className="w-5 h-5" />
                 <span>Profil</span>
+              </Link>
+
+              <Link
+                to="/tickets"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-slate-700 hover:text-emerald-600 px-4 py-2"
+              >
+                <LifeBuoy className="w-5 h-5" />
+                <span>Destek</span>
               </Link>
 
               <button

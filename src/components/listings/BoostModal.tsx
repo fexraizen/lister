@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Rocket } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../contexts/NotificationContext';
+import { getSystemSettings, calculateFinalPrice } from '../../lib/systemSettings';
 
 interface BoostModalProps {
   listingId: string;
@@ -17,15 +18,52 @@ interface BoostOption {
   label: string;
 }
 
-const BOOST_OPTIONS: BoostOption[] = [
-  { duration: '24 saat', hours: 24, cost: 1000, label: '24 Saat - $1,000' },
-  { duration: '1 hafta', hours: 168, cost: 5000, label: '1 Hafta - $5,000' },
-];
-
 export function BoostModal({ listingId, isOpen, onClose, onSuccess }: BoostModalProps) {
   const { showToast } = useNotification();
   const [selectedOption, setSelectedOption] = useState<BoostOption | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [discountRate, setDiscountRate] = useState(0);
+  const [boostOptions, setBoostOptions] = useState<BoostOption[]>([]);
+
+  useEffect(() => {
+    loadSystemSettings();
+  }, []);
+
+  const loadSystemSettings = async () => {
+    try {
+      const settings = await getSystemSettings();
+      setDiscountRate(settings.global_discount_rate);
+      
+      // Calculate final boost prices with discount
+      const finalBoost24h = calculateFinalPrice(settings.boost_fee_24h, settings.global_discount_rate);
+      const finalBoost7d = calculateFinalPrice(settings.boost_fee_7d, settings.global_discount_rate);
+      
+      // Create boost options with dynamic pricing
+      const options: BoostOption[] = [
+        { 
+          duration: '24 saat', 
+          hours: 24, 
+          cost: finalBoost24h, 
+          label: `24 Saat - ${finalBoost24h.toFixed(2)}` 
+        },
+        { 
+          duration: '1 hafta', 
+          hours: 168, 
+          cost: finalBoost7d, 
+          label: `1 Hafta - ${finalBoost7d.toFixed(2)}` 
+        },
+      ];
+      
+      setBoostOptions(options);
+    } catch (error) {
+      console.error('Error loading system settings:', error);
+      // Fallback to default options
+      setBoostOptions([
+        { duration: '24 saat', hours: 24, cost: 15, label: '24 Saat - $15' },
+        { duration: '1 hafta', hours: 168, cost: 50, label: '1 Hafta - $50' },
+      ]);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -91,7 +129,7 @@ export function BoostModal({ listingId, isOpen, onClose, onSuccess }: BoostModal
 
         {/* Options */}
         <div className="space-y-3 mb-6">
-          {BOOST_OPTIONS.map((option) => (
+          {boostOptions.map((option) => (
             <button
               key={option.hours}
               onClick={() => setSelectedOption(option)}
@@ -105,10 +143,20 @@ export function BoostModal({ listingId, isOpen, onClose, onSuccess }: BoostModal
                 <div>
                   <p className="font-bold text-gray-900">{option.duration}</p>
                   <p className="text-sm text-gray-600">Öne çıkarma süresi</p>
+                  {discountRate > 0 && (
+                    <p className="text-xs text-emerald-600 font-semibold mt-1">
+                      %{discountRate} indirim uygulandı!
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
+                  {discountRate > 0 && (
+                    <p className="text-sm text-gray-400 line-through">
+                      ${(option.cost / (1 - discountRate / 100)).toFixed(2)}
+                    </p>
+                  )}
                   <p className="text-2xl font-bold text-gray-900">
-                    ${option.cost.toLocaleString()}
+                    ${option.cost.toFixed(2)}
                   </p>
                 </div>
               </div>

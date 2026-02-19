@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { getUserShops, getShopById, type Shop } from '../../lib/shops';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign } from 'lucide-react';
+import { getSystemSettings, calculateFinalPrice } from '../../lib/systemSettings';
 
 type Category = 'vehicle' | 'real_estate' | 'item' | 'service';
 
@@ -29,14 +30,28 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
   const [speed, setSpeed] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [listingFee, setListingFee] = useState(10);
+  const [discountRate, setDiscountRate] = useState(0);
 
-  const LISTING_FEE = 100;
+  useEffect(() => {
+    loadSystemSettings();
+  }, []);
 
   useEffect(() => {
     if (user) {
       loadUserShops();
     }
   }, [user]);
+
+  const loadSystemSettings = async () => {
+    try {
+      const settings = await getSystemSettings();
+      setListingFee(settings.listing_fee);
+      setDiscountRate(settings.global_discount_rate);
+    } catch (error) {
+      console.error('Error loading system settings:', error);
+    }
+  };
 
   const loadUserShops = async () => {
     if (!user) return;
@@ -67,9 +82,12 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
     setError('');
     setLoading(true);
 
+    // Calculate final fee with discount
+    const finalFee = calculateFinalPrice(listingFee, discountRate);
+
     // Check balance first
-    if (!profile || profile.balance < LISTING_FEE) {
-      showToast(`İlan yayınlamak için bakiyeniz yetersiz ($${LISTING_FEE}). Lütfen bakiye yükleyin.`, 'error');
+    if (!profile || profile.balance < finalFee) {
+      showToast(`İlan yayınlamak için bakiyeniz yetersiz ($${finalFee.toFixed(2)}). Lütfen bakiye yükleyin.`, 'error');
       setLoading(false);
       return;
     }
@@ -143,7 +161,7 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
       // Step 1: Charge listing fee
       const { error: feeError } = await supabase.rpc('charge_listing_fee', {
         p_user_id: user.id,
-        p_fee: LISTING_FEE
+        p_fee: finalFee
       });
 
       if (feeError) {
@@ -219,7 +237,7 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
       }
 
       console.log('✅ Listing created successfully');
-      showToast(`İlan yayına alındı! (-$${LISTING_FEE})`, 'success');
+      showToast(`İlan yayına alındı! (-$${finalFee.toFixed(2)})`, 'success');
       onSuccess?.();
     } catch (err: any) {
       console.error('❌ Creation failed:', err);
@@ -243,7 +261,18 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
           <div>
             <p className="font-semibold text-blue-900 mb-1">İlan Yayınlama Ücreti</p>
             <p className="text-sm text-blue-700">
-              İlanınızı yayınlamak için <strong>${LISTING_FEE}</strong> ücret alınacaktır.
+              İlanınızı yayınlamak için {discountRate > 0 && (
+                <span>
+                  <span className="line-through text-gray-500">${listingFee.toFixed(2)}</span>
+                  {' '}
+                </span>
+              )}
+              <strong>${calculateFinalPrice(listingFee, discountRate).toFixed(2)}</strong> ücret alınacaktır.
+              {discountRate > 0 && (
+                <span className="ml-2 text-emerald-600 font-semibold">
+                  (%{discountRate} indirim!)
+                </span>
+              )}
             </p>
             {profile && (
               <p className="text-sm text-blue-600 mt-1">

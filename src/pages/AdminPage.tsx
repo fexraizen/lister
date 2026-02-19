@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
-import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign, Package, AlertTriangle, Settings } from 'lucide-react';
+import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign, Package, AlertTriangle, Settings, MessageCircle, Clock, TrendingUp } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -28,7 +28,9 @@ type Report = Database['public']['Tables']['reports']['Row'] & {
   };
 };
 
-type TabType = 'users' | 'shops' | 'listings' | 'reports' | 'activity' | 'financial' | 'settings';
+type Ticket = Database['public']['Tables']['tickets']['Row'];
+
+type TabType = 'users' | 'shops' | 'listings' | 'reports' | 'tickets' | 'activity' | 'financial' | 'settings' | 'pricing';
 
 type Toast = {
   id: string;
@@ -43,6 +45,7 @@ export function AdminPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,16 @@ export function AdminPage() {
     stats_approval_title: 'Hızlı Onay',
   });
   const [settingsLoading, setSettingsLoading] = useState(false);
+  
+  // System Pricing Settings State
+  const [pricingSettings, setPricingSettings] = useState({
+    listing_fee: 10,
+    boost_fee_24h: 15,
+    boost_fee_7d: 50,
+    deposit_bonus_rate: 0,
+    global_discount_rate: 0,
+  });
+  const [pricingLoading, setPricingLoading] = useState(false);
   
   // Modals
   const [editingBalance, setEditingBalance] = useState<{ userId: string; username: string; currentBalance: number } | null>(null);
@@ -173,6 +186,18 @@ export function AdminPage() {
       if (reportsError) throw reportsError;
       setReports(reportsData as unknown as Report[]);
 
+      // Load tickets (simple query without join)
+      const { data: ticketsData, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (ticketsError) {
+        console.error('Supabase Ticket Hatası:', ticketsError?.message, ticketsError?.details, ticketsError);
+        throw ticketsError;
+      }
+      setTickets(ticketsData || []);
+
       // Load activity logs
       const { data: logsData, error: logsError } = await supabase
         .from('activity_logs')
@@ -209,6 +234,27 @@ export function AdminPage() {
           stats_support_title: settingsObj.stats_support_title || 'Kesintisiz İletişim',
           stats_approval_title: settingsObj.stats_approval_title || 'Hızlı Onay',
         });
+      }
+
+      // Load system pricing settings
+      const { data: pricingData, error: pricingError } = await supabase
+        .from('system_settings')
+        .select('key, value');
+
+      if (!pricingError && pricingData) {
+        const pricingObj: any = {
+          listing_fee: 10,
+          boost_fee_24h: 15,
+          boost_fee_7d: 50,
+          deposit_bonus_rate: 0,
+          global_discount_rate: 0,
+        };
+        (pricingData as any[]).forEach((item: any) => {
+          if (item.key in pricingObj) {
+            pricingObj[item.key] = Number(item.value);
+          }
+        });
+        setPricingSettings(pricingObj);
       }
     } catch (err) {
       console.error('Failed to load admin data:', err);
@@ -247,6 +293,42 @@ export function AdminPage() {
       showToast(err.message || 'Ayarlar kaydedilemedi', 'error');
     } finally {
       setSettingsLoading(false);
+    }
+  };
+
+  const handleSavePricingSettings = async () => {
+    if (!user) return;
+
+    try {
+      setPricingLoading(true);
+
+      // Update each pricing setting
+      const updates = [
+        { key: 'listing_fee', value: pricingSettings.listing_fee },
+        { key: 'boost_fee_24h', value: pricingSettings.boost_fee_24h },
+        { key: 'boost_fee_7d', value: pricingSettings.boost_fee_7d },
+        { key: 'deposit_bonus_rate', value: pricingSettings.deposit_bonus_rate },
+        { key: 'global_discount_rate', value: pricingSettings.global_discount_rate },
+      ];
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('system_settings')
+          .update({ value: update.value })
+          .eq('key', update.key);
+
+        if (error) throw error;
+      }
+
+      showToast('Fiyatlandırma ayarları başarıyla güncellendi!', 'success');
+      
+      // Reload data to refresh cache
+      await loadData();
+    } catch (err: any) {
+      console.error('Failed to save pricing settings:', err);
+      showToast(err.message || 'Fiyatlandırma ayarları kaydedilemedi', 'error');
+    } finally {
+      setPricingLoading(false);
     }
   };
 
@@ -995,7 +1077,18 @@ export function AdminPage() {
               }`}
             >
               <AlertTriangle className="w-5 h-5" />
-              <span>Bildirimler & Destek</span>
+              <span>İlan Şikayetleri</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('tickets')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
+                activeTab === 'tickets'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
+              }`}
+            >
+              <ScrollText className="w-5 h-5" />
+              <span>Destek Talepleri</span>
             </button>
             <button
               onClick={() => setActiveTab('activity')}
@@ -1018,6 +1111,17 @@ export function AdminPage() {
             >
               <DollarSign className="w-5 h-5" />
               <span>💰 Finansal Geçmiş</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('pricing')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold transition-colors rounded-t-[2rem] ${
+                activeTab === 'pricing'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-[#1a1a1a]'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              <span>💵 Fiyatlandırma</span>
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -1309,7 +1413,7 @@ export function AdminPage() {
               </div>
             ) : activeTab === 'reports' ? (
               <div>
-                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">Bildirimler & Destek Yönetimi</h2>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">İlan Şikayetleri Yönetimi</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1427,6 +1531,106 @@ export function AdminPage() {
                                     </button>
                                   )}
                                 </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : activeTab === 'tickets' ? (
+              <div>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">Destek Talepleri Yönetimi</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4">Talep ID / Konu</th>
+                        <th className="text-left py-3 px-4">Kullanıcı</th>
+                        <th className="text-left py-3 px-4">Kategori</th>
+                        <th className="text-left py-3 px-4">Durum</th>
+                        <th className="text-left py-3 px-4">Tarih</th>
+                        <th className="text-left py-3 px-4">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tickets.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-gray-500">
+                            Henüz destek talebi bulunmuyor
+                          </td>
+                        </tr>
+                      ) : (
+                        tickets.map((ticket) => {
+                          const statusColors = {
+                            open: 'bg-amber-100 text-amber-700',
+                            answered: 'bg-blue-100 text-blue-700',
+                            closed: 'bg-gray-100 text-gray-700'
+                          };
+                          const statusLabels = {
+                            open: 'Açık',
+                            answered: 'Yanıtlandı',
+                            closed: 'Kapalı'
+                          };
+                          const categoryLabels = {
+                            order: 'Sipariş',
+                            listing: 'İlan',
+                            complaint: 'Şikayet',
+                            other: 'Diğer'
+                          };
+                          
+                          return (
+                            <tr 
+                              key={ticket.id} 
+                              className={`border-b border-gray-100 hover:bg-gray-50 ${
+                                ticket.status === 'open' ? 'bg-amber-50/30' : ''
+                              }`}
+                            >
+                              <td className="py-3 px-4">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-xs text-gray-500 font-mono">
+                                    #{ticket.id.slice(0, 8)}
+                                  </span>
+                                  <span className="font-medium text-gray-900">
+                                    {ticket.subject}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {users.find(u => u.id === ticket.user_id)?.username || 'Bilinmeyen'}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
+                                  {categoryLabels[ticket.category]}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 ${statusColors[ticket.status]}`}>
+                                  {ticket.status === 'open' && <Clock className="w-3 h-3" />}
+                                  {ticket.status === 'answered' && <MessageCircle className="w-3 h-3" />}
+                                  {ticket.status === 'closed' && <CheckCircle2 className="w-3 h-3" />}
+                                  {statusLabels[ticket.status]}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-gray-600">
+                                {new Date(ticket.created_at).toLocaleDateString('tr-TR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Link
+                                  to={`/tickets/${ticket.id}`}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-semibold"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                  İncele / Yanıtla
+                                </Link>
                               </td>
                             </tr>
                           );
@@ -1631,6 +1835,216 @@ export function AdminPage() {
                       })()}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            ) : activeTab === 'pricing' ? (
+              <div>
+                <h2 className="text-xl font-bold mb-4 text-[#1a1a1a]">💵 Fiyatlandırma & İndirim Yönetimi</h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  İlan ücretlerini, boost fiyatlarını, bakiye yükleme bonuslarını ve genel indirimleri buradan yönetin. Değişiklikler anında tüm sitede geçerli olur.
+                </p>
+
+                <div className="max-w-4xl space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Listing Fee */}
+                    <div className="bg-gradient-to-br from-blue-50/40 to-white rounded-[1.5rem] p-6 border border-blue-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        💼 İlan Ücreti ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={pricingSettings.listing_fee}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, listing_fee: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="10.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Kullanıcıların yeni ilan oluştururken ödeyeceği standart ücret
+                      </p>
+                      {pricingSettings.global_discount_rate > 0 && (
+                        <p className="text-xs text-emerald-600 mt-1 font-semibold">
+                          İndirimli: ${(pricingSettings.listing_fee * (1 - pricingSettings.global_discount_rate / 100)).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Boost Fee 24h */}
+                    <div className="bg-gradient-to-br from-amber-50/40 to-white rounded-[1.5rem] p-6 border border-amber-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        🚀 Boost Ücreti - 24 Saat ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={pricingSettings.boost_fee_24h}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, boost_fee_24h: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="15.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        24 saat boyunca öne çıkarma ücreti
+                      </p>
+                      {pricingSettings.global_discount_rate > 0 && (
+                        <p className="text-xs text-emerald-600 mt-1 font-semibold">
+                          İndirimli: ${(pricingSettings.boost_fee_24h * (1 - pricingSettings.global_discount_rate / 100)).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Boost Fee 7d */}
+                    <div className="bg-gradient-to-br from-orange-50/40 to-white rounded-[1.5rem] p-6 border border-orange-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        🚀 Boost Ücreti - 1 Hafta ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={pricingSettings.boost_fee_7d}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, boost_fee_7d: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="50.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        1 hafta (7 gün) boyunca öne çıkarma ücreti
+                      </p>
+                      {pricingSettings.global_discount_rate > 0 && (
+                        <p className="text-xs text-emerald-600 mt-1 font-semibold">
+                          İndirimli: ${(pricingSettings.boost_fee_7d * (1 - pricingSettings.global_discount_rate / 100)).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Deposit Bonus Rate */}
+                    <div className="bg-gradient-to-br from-emerald-50/40 to-white rounded-[1.5rem] p-6 border border-emerald-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        🎁 Bakiye Yükleme Bonusu (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={pricingSettings.deposit_bonus_rate}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, deposit_bonus_rate: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Kullanıcılar bakiye yüklerken ekstra alacakları bonus yüzdesi
+                      </p>
+                      {pricingSettings.deposit_bonus_rate > 0 && (
+                        <p className="text-xs text-emerald-600 mt-1 font-semibold">
+                          Örnek: $100 yüklemede +${(100 * pricingSettings.deposit_bonus_rate / 100).toFixed(2)} bonus
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Global Discount Rate */}
+                    <div className="bg-gradient-to-br from-rose-50/40 to-white rounded-[1.5rem] p-6 border border-rose-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        🏷️ Genel İndirim Oranı (%)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={pricingSettings.global_discount_rate}
+                        onChange={(e) => setPricingSettings({ ...pricingSettings, global_discount_rate: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-[1rem] text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Tüm ücretlere (ilan, boost) uygulanacak indirim yüzdesi
+                      </p>
+                      {pricingSettings.global_discount_rate > 0 && (
+                        <p className="text-xs text-rose-600 mt-1 font-semibold">
+                          Kampanya aktif! Tüm ücretlerde %{pricingSettings.global_discount_rate} indirim
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={handleSavePricingSettings}
+                      disabled={pricingLoading}
+                      className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-[1.5rem] hover:bg-emerald-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      {pricingLoading ? 'Kaydediliyor...' : '💾 Fiyatlandırma Ayarlarını Kaydet'}
+                    </button>
+                    <button
+                      onClick={loadData}
+                      disabled={pricingLoading}
+                      className="px-6 py-3 bg-gray-100 text-gray-700 rounded-[1.5rem] hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50"
+                    >
+                      🔄 Sıfırla
+                    </button>
+                  </div>
+
+                  {/* Preview Section */}
+                  <div className="bg-gradient-to-br from-purple-50/40 to-white rounded-[1.5rem] p-6 border border-purple-100">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">👁️ Fiyat Önizlemesi</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="bg-white rounded-[1rem] p-4 shadow-sm border border-blue-100 text-center">
+                        <p className="text-xs text-gray-600 mb-1">İlan Ücreti</p>
+                        {pricingSettings.global_discount_rate > 0 ? (
+                          <>
+                            <p className="text-lg font-bold text-gray-400 line-through">${pricingSettings.listing_fee.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-emerald-600">
+                              ${(pricingSettings.listing_fee * (1 - pricingSettings.global_discount_rate / 100)).toFixed(2)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-2xl font-bold text-gray-900">${pricingSettings.listing_fee.toFixed(2)}</p>
+                        )}
+                      </div>
+                      <div className="bg-white rounded-[1rem] p-4 shadow-sm border border-amber-100 text-center">
+                        <p className="text-xs text-gray-600 mb-1">Boost 24h</p>
+                        {pricingSettings.global_discount_rate > 0 ? (
+                          <>
+                            <p className="text-lg font-bold text-gray-400 line-through">${pricingSettings.boost_fee_24h.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-emerald-600">
+                              ${(pricingSettings.boost_fee_24h * (1 - pricingSettings.global_discount_rate / 100)).toFixed(2)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-2xl font-bold text-gray-900">${pricingSettings.boost_fee_24h.toFixed(2)}</p>
+                        )}
+                      </div>
+                      <div className="bg-white rounded-[1rem] p-4 shadow-sm border border-orange-100 text-center">
+                        <p className="text-xs text-gray-600 mb-1">Boost 7d</p>
+                        {pricingSettings.global_discount_rate > 0 ? (
+                          <>
+                            <p className="text-lg font-bold text-gray-400 line-through">${pricingSettings.boost_fee_7d.toFixed(2)}</p>
+                            <p className="text-xl font-bold text-emerald-600">
+                              ${(pricingSettings.boost_fee_7d * (1 - pricingSettings.global_discount_rate / 100)).toFixed(2)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-2xl font-bold text-gray-900">${pricingSettings.boost_fee_7d.toFixed(2)}</p>
+                        )}
+                      </div>
+                      <div className="bg-white rounded-[1rem] p-4 shadow-sm border border-emerald-100 text-center">
+                        <p className="text-xs text-gray-600 mb-1">$100 Yüklemede</p>
+                        <p className="text-2xl font-bold text-emerald-600">
+                          ${(100 + (100 * pricingSettings.deposit_bonus_rate / 100)).toFixed(2)}
+                        </p>
+                        {pricingSettings.deposit_bonus_rate > 0 && (
+                          <p className="text-xs text-emerald-600 mt-1">+${(100 * pricingSettings.deposit_bonus_rate / 100).toFixed(2)} bonus</p>
+                        )}
+                      </div>
+                      <div className="bg-white rounded-[1rem] p-4 shadow-sm border border-rose-100 text-center">
+                        <p className="text-xs text-gray-600 mb-1">İndirim Oranı</p>
+                        <p className="text-2xl font-bold text-rose-600">%{pricingSettings.global_discount_rate.toFixed(1)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : activeTab === 'settings' ? (
