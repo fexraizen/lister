@@ -6,6 +6,7 @@ import { getUserShops, getShopById, type Shop } from '../../lib/shops';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign } from 'lucide-react';
 import { getSystemSettings, calculateFinalPrice } from '../../lib/systemSettings';
+import { sendNotification, NotificationTemplates } from '../../lib/notificationService';
 
 type Category = 'vehicle' | 'real_estate' | 'item' | 'service';
 
@@ -217,9 +218,11 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
         shop_id: listingData.shop_id ? `${listingData.shop_id} (UUID validated)` : 'null'
       });
 
-      const { error: insertError } = await supabase
+      const { data: newListing, error: insertError } = await supabase
         .from('listings')
-        .insert(listingData);
+        .insert(listingData)
+        .select()
+        .single();
 
       if (insertError) {
         console.error('❌ Database error:', insertError);
@@ -237,6 +240,13 @@ export function ListingForm({ onSuccess, onCancel }: ListingFormProps) {
       }
 
       console.log('✅ Listing created successfully');
+      
+      // Send notification to user
+      if (newListing && user?.id) {
+        const notification = NotificationTemplates.listingCreated(title);
+        await sendNotification(user.id, notification.title, notification.message);
+      }
+      
       showToast(`İlan yayına alındı! (-$${finalFee.toFixed(2)})`, 'success');
       onSuccess?.();
     } catch (err: any) {

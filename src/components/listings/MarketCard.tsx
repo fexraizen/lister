@@ -224,7 +224,7 @@ export function MarketCard({ listing, onDelete }: MarketCardProps) {
           {!isOwner && (
             <button
               onClick={handleFavoriteToggle}
-              className="absolute bottom-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-md"
+              className="absolute bottom-3 right-3 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all"
             >
               <Heart 
                 className={`w-5 h-5 transition-colors ${

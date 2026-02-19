@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
 import { getShopById, type Shop } from '../lib/shops';
-import { ArrowLeft, MapPin, Gauge, MessageCircle, Calendar, Store, Phone, User as UserIcon, Rocket, Zap, Clock, Edit, Trash2, AlertTriangle, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Gauge, MessageCircle, Calendar, Store, Phone, User as UserIcon, Rocket, Zap, Clock, Edit, Trash2, AlertTriangle, X, Heart } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 import { VerificationBadge } from '../components/common/VerificationBadge';
 import { BoostModal } from '../components/listings/BoostModal';
@@ -34,15 +34,21 @@ export function ListingDetailPage() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<string | null>(null);
+  const [isStartingConversation, setIsStartingConversation] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadListing();
       incrementViewCount();
+      if (user) {
+        checkFavoriteStatus();
+      }
     } else {
       navigate('/');
     }
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
   const incrementViewCount = async () => {
     if (!id) return;
@@ -98,6 +104,127 @@ export function ListingDetailPage() {
       navigate('/');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkFavoriteStatus = async () => {
+    if (!user || !id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('listing_id', id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setIsFavorited(true);
+        setFavoriteId(data.id);
+      }
+    } catch (err) {
+      console.error('Error checking favorite status:', err);
+    }
+  };
+
+  const handleFavoriteToggle = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    if (!id) return;
+
+    try {
+      if (isFavorited && favoriteId) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('id', favoriteId);
+
+        if (error) throw error;
+        setIsFavorited(false);
+        setFavoriteId(null);
+        showToast('Favorilerden çıkarıldı', 'info');
+      } else {
+        // Add to favorites
+        const { data, error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            listing_id: id
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setIsFavorited(true);
+        setFavoriteId(data.id);
+        showToast('Favorilere eklendi! ❤️', 'success');
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+      showToast('İşlem başarısız', 'error');
+    }
+  };
+
+  const handleContactSeller = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    // Open the contact modal instead of directly creating conversation
+    setShowContactModal(true);
+  };
+
+  const startConversation = async () => {
+    if (!user || !listing || !id) return;
+
+    setIsStartingConversation(true);
+
+    try {
+      // Check if conversation already exists
+      const { data: existingConv, error: convError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('listing_id', id)
+        .eq('buyer_id', user.id)
+        .eq('seller_id', listing.user_id)
+        .maybeSingle();
+
+      if (convError && convError.code !== 'PGRST116') throw convError;
+
+      let conversationId: string;
+
+      if (existingConv) {
+        // Conversation exists, navigate to it
+        conversationId = existingConv.id;
+      } else {
+        // Create new conversation
+        const { data: newConv, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            listing_id: id,
+            buyer_id: user.id,
+            seller_id: listing.user_id,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        conversationId = newConv.id;
+      }
+
+      // Close modal and navigate to messages page
+      setShowContactModal(false);
+      navigate(`/messages/${conversationId}`);
+    } catch (err) {
+      console.error('Error creating conversation:', err);
+      showToast('Mesajlaşma başlatılamadı', 'error');
+    } finally {
+      setIsStartingConversation(false);
     }
   };
 
@@ -373,7 +500,7 @@ export function ListingDetailPage() {
                 {!isOwner && (isActive || isOutOfStock) && (
                   <>
                     <button
-                      onClick={() => setShowContactModal(true)}
+                      onClick={handleContactSeller}
                       disabled={isOutOfStock}
                       className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-[1.5rem] transition-all font-semibold text-lg mb-3 ${
                         isOutOfStock
@@ -384,6 +511,24 @@ export function ListingDetailPage() {
                       <MessageCircle className="w-5 h-5" />
                       <span>{isOutOfStock ? 'Stokta Yok' : 'İletişime Geç'}</span>
                     </button>
+                    
+                    {/* Favorite Button */}
+                    <button
+                      onClick={handleFavoriteToggle}
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-colors border mb-3 ${
+                        isFavorited
+                          ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Heart 
+                        className={`w-5 h-5 ${
+                          isFavorited ? 'fill-red-500 text-red-500' : 'text-slate-600'
+                        }`}
+                      />
+                      <span>{isFavorited ? 'Favorilerden Çıkar' : 'Favoriye Ekle'}</span>
+                    </button>
+                    
                     <button
                       onClick={() => setShowReportModal(true)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-50 text-orange-600 rounded-[1.5rem] hover:bg-orange-100 transition-colors font-semibold"
@@ -537,6 +682,8 @@ export function ListingDetailPage() {
         sellerPhone={shop?.phone || sellerProfile?.phone}
         shopName={shop?.name}
         isShop={!!shop}
+        onStartConversation={startConversation}
+        isStartingConversation={isStartingConversation}
       />
 
       {/* Report Modal */}

@@ -7,9 +7,20 @@ interface ContactModalProps {
   sellerPhone?: string | null;
   shopName?: string | null;
   isShop: boolean;
+  onStartConversation?: () => void;
+  isStartingConversation?: boolean;
 }
 
-export function ContactModal({ isOpen, onClose, sellerName, sellerPhone, shopName, isShop }: ContactModalProps) {
+export function ContactModal({ 
+  isOpen, 
+  onClose, 
+  sellerName, 
+  sellerPhone, 
+  shopName, 
+  isShop,
+  onStartConversation,
+  isStartingConversation = false
+}: ContactModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -86,13 +97,25 @@ export function ContactModal({ isOpen, onClose, sellerName, sellerPhone, shopNam
           </div>
         </div>
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="w-full mt-6 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
-        >
-          Kapat
-        </button>
+        {/* Action Buttons */}
+        <div className="flex gap-3 mt-6">
+          {onStartConversation && (
+            <button
+              onClick={onStartConversation}
+              disabled={isStartingConversation}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span>{isStartingConversation ? 'Başlatılıyor...' : 'Sohbete Başla'}</span>
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className={`${onStartConversation ? 'flex-1' : 'w-full'} px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold`}
+          >
+            Kapat
+          </button>
+        </div>
       </div>
 
       <style>{`

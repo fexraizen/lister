@@ -5,6 +5,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { Navbar } from '../components/layout/Navbar';
 import { createShop } from '../lib/shops';
 import { Store, Phone, FileText, Image, Save, ArrowLeft } from 'lucide-react';
+import { sendNotification, NotificationTemplates } from '../lib/notificationService';
 
 export function ShopCreatePage() {
   const { user } = useAuth();
@@ -43,6 +44,10 @@ export function ShopCreatePage() {
       });
 
       if (createError) throw new Error(createError);
+
+      // Send notification to user
+      const notification = NotificationTemplates.shopCreated(name);
+      await sendNotification(user.id, notification.title, notification.message);
 
       showToast('Mağaza başarıyla oluşturuldu! 🎉', 'success');
       navigate('/shop/manage');

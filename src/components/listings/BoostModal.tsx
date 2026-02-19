@@ -3,6 +3,7 @@ import { X, Rocket } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getSystemSettings, calculateFinalPrice } from '../../lib/systemSettings';
+import { sendNotification, NotificationTemplates } from '../../lib/notificationService';
 
 interface BoostModalProps {
   listingId: string;
@@ -87,6 +88,22 @@ export function BoostModal({ listingId, isOpen, onClose, onSuccess }: BoostModal
 
       if (error) {
         throw error;
+      }
+
+      // Get listing title for notification
+      const { data: listing } = await supabase
+        .from('listings')
+        .select('title')
+        .eq('id', listingId)
+        .single();
+
+      // Send notification to user
+      if (listing) {
+        const notification = NotificationTemplates.listingBoosted(
+          listing.title,
+          selectedOption.duration
+        );
+        await sendNotification(user.id, notification.title, notification.message);
       }
 
       // No error means success

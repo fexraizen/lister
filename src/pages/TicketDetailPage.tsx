@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Navbar } from '../components/layout/Navbar';
 import { ArrowLeft, Send, User, Shield, X } from 'lucide-react';
+import { sendNotification, NotificationTemplates } from '../lib/notificationService';
 
 interface Ticket {
   id: string;
@@ -136,7 +137,7 @@ export function TicketDetailPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !id || !user?.id) return;
+    if (!newMessage.trim() || !id || !user?.id || !ticket) return;
 
     setSending(true);
     try {
@@ -154,7 +155,11 @@ export function TicketDetailPage() {
       setNewMessage('');
       await fetchMessages();
       
-      // If admin sent message and ticket is open, it will auto-update to 'answered' via trigger
+      // If admin sent message, send notification to ticket owner
+      if (isAdmin && ticket.user_id !== user.id) {
+        const notification = NotificationTemplates.ticketReplied(ticket.subject);
+        await sendNotification(ticket.user_id, notification.title, notification.message);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Mesaj gönderilirken bir hata oluştu.');
@@ -164,7 +169,7 @@ export function TicketDetailPage() {
   };
 
   const handleCloseTicket = async () => {
-    if (!id || !user?.id || !isAdmin) return;
+    if (!id || !user?.id || !isAdmin || !ticket) return;
     
     if (!confirm('Bu talebi kapatmak istediğinizden emin misiniz?')) {
       return;
@@ -180,6 +185,12 @@ export function TicketDetailPage() {
       if (error) throw error;
       
       await fetchTicketData();
+      
+      // Send notification to ticket owner
+      if (ticket.user_id !== user.id) {
+        const notification = NotificationTemplates.ticketClosed(ticket.subject);
+        await sendNotification(ticket.user_id, notification.title, notification.message);
+      }
     } catch (error) {
       console.error('Error closing ticket:', error);
       alert('Talep kapatılırken bir hata oluştu.');

@@ -5,6 +5,7 @@ import { Navbar } from '../components/layout/Navbar';
 import { supabase } from '../lib/supabase';
 import { Shield, Users, Store, X, Edit, CheckCircle2, Ban, Trash2, UserCog, ScrollText, DollarSign, Package, AlertTriangle, Settings, MessageCircle, Clock, TrendingUp } from 'lucide-react';
 import type { Database } from '../lib/database.types';
+import { sendNotification, NotificationTemplates } from '../lib/notificationService';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Shop = Database['public']['Tables']['shops']['Row'];
@@ -340,6 +341,13 @@ export function AdminPage() {
         .eq('id', userId);
 
       if (error) throw error;
+      
+      // Send notification to user
+      if (!currentStatus) {
+        const notification = NotificationTemplates.accountVerified();
+        await sendNotification(userId, notification.title, notification.message);
+      }
+      
       showToast(`Kullanıcı ${!currentStatus ? 'onaylandı' : 'onayı kaldırıldı'}!`, 'success');
       loadData();
     } catch (err: any) {
@@ -355,6 +363,13 @@ export function AdminPage() {
         .eq('id', userId);
 
       if (error) throw error;
+      
+      // Send notification to user
+      if (!currentStatus) {
+        const notification = NotificationTemplates.accountBanned();
+        await sendNotification(userId, notification.title, notification.message);
+      }
+      
       showToast(`Kullanıcı ${!currentStatus ? 'banlandı' : 'ban kaldırıldı'}!`, 'success');
       loadData();
     } catch (err: any) {
@@ -395,6 +410,16 @@ export function AdminPage() {
         throw error;
       }
 
+      // Send notification to user
+      const roleLabels: Record<string, string> = {
+        user: 'Kullanıcı',
+        moderator: 'Moderatör',
+        admin: 'Admin',
+        super_admin: 'Super Admin'
+      };
+      const notification = NotificationTemplates.roleChanged(roleLabels[newRoleInput] || newRoleInput);
+      await sendNotification(editingRole.userId, notification.title, notification.message);
+
       // No error means success!
       showToast('Rol başarıyla güncellendi!', 'success');
       setEditingRole(null);
@@ -432,6 +457,14 @@ export function AdminPage() {
         .eq('id', editingBalance.userId);
 
       if (error) throw error;
+      
+      // Send notification to user
+      const balanceDiff = newBalance - editingBalance.currentBalance;
+      if (balanceDiff > 0) {
+        const notification = NotificationTemplates.balanceAdded(balanceDiff);
+        await sendNotification(editingBalance.userId, notification.title, notification.message);
+      }
+      
       showToast('Bakiye güncellendi!', 'success');
       setEditingBalance(null);
       loadData();
@@ -442,12 +475,26 @@ export function AdminPage() {
 
   const handleToggleShopVerification = async (shopId: string, currentStatus: boolean) => {
     try {
+      // Get shop details first
+      const { data: shop } = await supabase
+        .from('shops')
+        .select('name, owner_id')
+        .eq('id', shopId)
+        .single();
+
       const { error } = await supabase
         .from('shops')
         .update({ is_verified: !currentStatus })
         .eq('id', shopId);
 
       if (error) throw error;
+      
+      // Send notification to shop owner
+      if (!currentStatus && shop) {
+        const notification = NotificationTemplates.shopVerified(shop.name);
+        await sendNotification(shop.owner_id, notification.title, notification.message);
+      }
+      
       showToast(`Mağaza ${!currentStatus ? 'onaylandı' : 'onayı kaldırıldı'}!`, 'success');
       loadData();
     } catch (err: any) {
@@ -459,6 +506,13 @@ export function AdminPage() {
     if (!user) return;
 
     try {
+      // Get shop details first
+      const { data: shop } = await supabase
+        .from('shops')
+        .select('name, owner_id')
+        .eq('id', shopId)
+        .single();
+
       const { error } = await supabase.rpc('update_shop_status', {
         p_shop_id: shopId,
         p_new_status: newStatus,
@@ -469,6 +523,17 @@ export function AdminPage() {
       if (error) {
         console.error('RPC Error:', error);
         throw error;
+      }
+
+      // Send notification to shop owner
+      if (shop) {
+        const statusLabels: Record<string, string> = {
+          active: 'Aktif',
+          passive: 'Pasif (Tatil Modu)',
+          banned: 'Kapalı'
+        };
+        const notification = NotificationTemplates.shopStatusChanged(shop.name, statusLabels[newStatus]);
+        await sendNotification(shop.owner_id, notification.title, notification.message);
       }
 
       // No error means success!
@@ -732,12 +797,26 @@ export function AdminPage() {
     }
 
     try {
+      // Get listing owner first
+      const { data: listing } = await supabase
+        .from('listings')
+        .select('user_id')
+        .eq('id', listingId)
+        .single();
+
       const { error } = await supabase
         .from('listings')
         .delete()
         .eq('id', listingId);
 
       if (error) throw error;
+      
+      // Send notification to listing owner
+      if (listing) {
+        const notification = NotificationTemplates.listingDeleted(listingTitle);
+        await sendNotification(listing.user_id, notification.title, notification.message);
+      }
+      
       showToast('İlan başarıyla silindi', 'success');
       loadData();
     } catch (err: any) {

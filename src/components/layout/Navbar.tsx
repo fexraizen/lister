@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, User, Plus, DollarSign, Menu, X, Search, Home, LayoutList, Store, Shield, LifeBuoy, Heart, Bell } from 'lucide-react';
+import { LogOut, User, Plus, DollarSign, Menu, X, Search, Home, LayoutList, Store, Shield, LifeBuoy, Heart, Bell, MessageSquare } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 
@@ -19,12 +19,14 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       loadNotifications();
+      loadUnreadMessages();
       
       // Subscribe to new notifications
       const channel = supabase
@@ -43,8 +45,25 @@ export function Navbar() {
         )
         .subscribe();
 
+      // Subscribe to new messages
+      const messagesChannel = supabase
+        .channel('user-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages'
+          },
+          () => {
+            loadUnreadMessages();
+          }
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(channel);
+        supabase.removeChannel(messagesChannel);
       };
     }
   }, [user]);
@@ -76,6 +95,40 @@ export function Navbar() {
       setUnreadCount(data?.filter(n => !n.is_read).length || 0);
     } catch (err) {
       console.error('Error loading notifications:', err);
+    }
+  };
+
+  const loadUnreadMessages = async () => {
+    if (!user) return;
+
+    try {
+      // Get all conversations where user is participant
+      const { data: conversations, error: convError } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+
+      if (convError) throw convError;
+
+      if (!conversations || conversations.length === 0) {
+        setUnreadMessagesCount(0);
+        return;
+      }
+
+      const conversationIds = conversations.map(c => c.id);
+
+      // Count unread messages in these conversations
+      const { count, error: countError } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .in('conversation_id', conversationIds)
+        .eq('is_read', false)
+        .neq('sender_id', user.id);
+
+      if (countError) throw countError;
+      setUnreadMessagesCount(count || 0);
+    } catch (err) {
+      console.error('Error loading unread messages:', err);
     }
   };
 
@@ -243,6 +296,19 @@ export function Navbar() {
                 >
                   <Plus className="w-4 h-4" />
                   <span>İlan Oluştur</span>
+                </button>
+
+                {/* Messages Icon */}
+                <button
+                  onClick={() => navigate('/messages')}
+                  className="hidden lg:block relative p-2 text-slate-700 hover:text-emerald-600 hover:bg-slate-100 rounded-full transition-all duration-300"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    </span>
+                  )}
                 </button>
 
                 {/* Notification Bell */}
